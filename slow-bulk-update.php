@@ -28,17 +28,6 @@ class SWPD_Slow_Bulk_Update extends SlowQueries {
 		}
 		return $location;
 	}
-
-	public function get_post_id() {
-		if ( isset( $_GET['post'] ) ) {
-			$post_id = $post_ID = (int) $_GET['post'];
-		} elseif ( isset( $_POST['post_ID'] ) ) {
-			$post_id = $post_ID = (int) $_POST['post_ID'];
-		} else {
-			$post_id = $post_ID = 0;
-		}
-		return $post_id;
-	}
 }
 
 new SWPD_Slow_Bulk_Update();

@@ -187,4 +187,15 @@ class SlowQueries {
 	public function log() {
 		swpd_log( $this->debugger_name, $this->render_sql_queries() . 'Query Summary: ' . "\n" . $this->render_sql_query_summary(), null, array( 'Post' => $this->get_post_id() ), false );
 	}
+
+	public function get_post_id() {
+		if ( isset( $_GET['post'] ) ) {
+			$post_id = $post_ID = (int) $_GET['post'];
+		} elseif ( isset( $_POST['post_ID'] ) ) {
+			$post_id = $post_ID = (int) $_POST['post_ID'];
+		} else {
+			$post_id = $post_ID = 0;
+		}
+		return $post_id;
+	}
 }
