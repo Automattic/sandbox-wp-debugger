@@ -21,7 +21,7 @@ class SWPD_Batcache_Debug {
 		}
 
 		// Ignore static files
-		$request_url = ( $_SEVER['HTTPS'] ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$request_url = ( $_SERVER['HTTPS'] ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 		$parsed_request_url = wp_parse_url( $request_url );
 		if ( '.js' === substr( $parsed_request_url['path'], -3 ) ) {
 			return;	
