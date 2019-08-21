@@ -16,7 +16,7 @@ class SWPD_Slow_Bulk_Update extends SlowQueries {
 		if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 			return $is_post_save;
 		}
-		if ( true === isset( $_REQUEST['bulk_edit'] ) && 'Update' === $_REQUEST['bulk_edit'] ) {
+		if ( true === isset( $_REQUEST['bulk_edit'] ) && __( 'Update' ) === $_REQUEST['bulk_edit'] ) {
 			$is_post_save = true;
 		}
 		return $is_post_save;
