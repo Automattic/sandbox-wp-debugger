@@ -121,9 +121,13 @@ class SlowQueries {
 
 		return $out;
 	}
-	
+
 	public function log() {
-		swpd_log( $this->debugger_name, $this->render_sql_queries() . 'Query Summary: ' . "\n" . $this->render_sql_query_summary(), null, array( 'Post' => $this->get_post_id() ), false );
+		swpd_log( $this->debugger_name, $this->get_message(), null, array( 'Post' => $this->get_post_id() ), false );
+	}
+
+	private function get_message() {
+		return $this->render_sql_queries() . 'Query Summary: ' . "\n" . $this->render_sql_query_summary();
 	}
 
 	private function get_post_id() {
