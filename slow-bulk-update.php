@@ -24,7 +24,7 @@ class SWPD_Slow_Bulk_Update extends SlowQueries {
 
 	public function wp_redirect_filter( $location ) {
 		if ( true === $this->is_post_save() ) {
-			$this->log_sql_queries();
+			$this->log();
 		}
 		return $location;
 	}
