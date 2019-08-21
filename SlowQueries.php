@@ -183,4 +183,8 @@ class SlowQueries {
 
 		return false;
 	}
+
+	public function log_sql_queries() {
+		swpd_log( $this->debugger_name, $this->render_sql_queries() . 'Query Summary: ' . "\n" . $this->render_sql_query_summary(), null, array( 'Post' => $this->get_post_id() ), false );
+	}
 }

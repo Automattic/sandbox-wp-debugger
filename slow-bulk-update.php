@@ -2,6 +2,8 @@
 
 class SWPD_Slow_Bulk_Update extends SlowQueries {
 
+	public $debugger_name = 'slow bulk update';
+
 	public function __construct() {
 		if ( false === defined( 'SAVEQUERIES' ) ) {
 			define( 'SAVEQUERIES', true );
@@ -36,10 +38,6 @@ class SWPD_Slow_Bulk_Update extends SlowQueries {
 			$post_id = $post_ID = 0;
 		}
 		return $post_id;
-	}
-
-	public function log_sql_queries() {
-		swpd_log( 'slow bulk update', $this->render_sql_queries() . 'Query Summary: ' . "\n" . $this->render_sql_query_summary(), null, array( 'Post' => $this->get_post_id() ), false );
 	}
 }
 
