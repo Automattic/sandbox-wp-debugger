@@ -29,6 +29,7 @@ if ( true === defined( 'WP_CLI' ) && WP_CLI ) {
 	}
 }
 
+require_once( SWPD_DIR_PATH . 'SlowQueries.php' );
 require_once( SWPD_DIR_PATH . 'slow-post-save.php' );
 require_once( SWPD_DIR_PATH . 'slow-bulk-update.php' );
 require_once( SWPD_DIR_PATH . 'debugbar-rest-api.php' );
