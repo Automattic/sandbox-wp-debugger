@@ -8,10 +8,13 @@ class SWPD_apply_filters {
 
 	private $swpd_filter_prev_value = null;
 
+	private $time_start = null;
+
 	public function __construct( $filter, $only_changed = false ) {
 		$this->filter_to_debug = $filter;
 		$this->only_changed = $only_changed;
 		add_filter( 'all', array( $this, 'filter_all' ), 10, 2 );
+		$this->time_start = microtime(true);
 	}
 
 	public function filter_all( $action, $value = null ) {
@@ -48,9 +51,11 @@ class SWPD_apply_filters {
 					'idx' => $idx,
 					'the_' => $the_,
 					'defined_in' => $this->defined_in( $the_ ),
-					'priority' => $priority
+					'priority' => $priority,
+					'time' => microtime(true) - $this->time_start,
 				) );
 			}
+			$this->time_start = microtime(true);
 			$this->swpd_filter_prev_value = $value;
 			return $value;
 	}
