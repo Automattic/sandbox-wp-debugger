@@ -8,6 +8,7 @@
 class SWPD_DebugBar_REST_API {
 
 	function __construct() {
+		remove_filter( 'authenticate', 'wp_authenticate_application_password', 20, 3 );
 		add_action( 'rest_api_init',          array( $this, 'rest_api_init' ) );
 		add_filter( 'rest_pre_echo_response', array( $this, 'rest_pre_echo_response' ), 10, 3 );
 	}
