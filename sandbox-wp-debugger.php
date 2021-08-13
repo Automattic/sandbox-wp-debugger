@@ -17,6 +17,7 @@ require_once( SWPD_DIR_PATH . 'helper-functions.php' );
 
 require_once( SWPD_DIR_PATH . 'wp-redirect.php' );
 require_once( SWPD_DIR_PATH . 'apply-filters.php' );
+require_once( SWPD_DIR_PATH . 'do-action.php' );
 require_once( SWPD_DIR_PATH . 'batcache-debug.php' );
 
 if ( true === defined( 'WP_CLI' ) && WP_CLI ) {

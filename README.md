@@ -79,3 +79,15 @@ By setting the second param of `swpd_apply_filter_debug` functin to `true` the o
   'priority' => 10,
 )
 ```
+
+### do_action
+
+A custom callback can be registered to run after each already registered callback to a hook, so the state of global variables and data can be examined.
+
+#### usage
+
+```
+wp shell --url=example.org
+wp> swpd_do_action_debug( 'widgets_init', function( $value, $idx, $the_, $priority ) { global $wp_widget_factory; if ( empty( $wp_widget_factory->widgets ) ) { var_dump( $the_ ); die; } } );
+wp> wp_widgets_init();
+```
