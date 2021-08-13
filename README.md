@@ -7,6 +7,7 @@ It can be used for quickly debugging following issues:
 * wp_redirect issues
 * WP CLI error backtracking
 * apply_filters
+* do_action
 
 ## Installation
 
@@ -43,6 +44,8 @@ Backtrace: include('bin/wp-cli/php/wp-cli.php'), WP_CLI\Runner->after_wp_load, W
 ```
 
 ### apply_filters
+
+Allows one to examine how individual filter callbacks change the passed in value.
 
 #### usage
 
