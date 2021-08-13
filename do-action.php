@@ -6,8 +6,6 @@ class SWPD_do_action {
 
 	private $callback = null;
 
-	private $swpd_filter_prev_value = null;
-
 	public function __construct( $filter, $callback ) {
 		$this->filter_to_debug = $filter;
 		$this->callback = $callback;
