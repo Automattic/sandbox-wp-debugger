@@ -42,20 +42,6 @@ class SWPD_do_action {
 			return $value;
 	}
 
-	public function defined_in( $the_ ) {
-		$return = 'N/A';
-		// Handle function and closures.
-		if ( true === is_string( $the_['function'] ) || true === is_a( $the_['function'], '\Closure' ) ) {
-			$the_reflection = new ReflectionFunction( $the_['function'] );
-			$return = $the_reflection->getFileName() . '#L' . $the_reflection->getStartLine();
-		}
-		// Handle class' methods
-		if ( true === is_array( $the_['function'] ) ) {
-			$the_reflection = new ReflectionMethod( $the_['function'][0], $the_['function'][1] );
-			$return = $the_reflection->getFileName() . '#L' . $the_reflection->getStartLine();
-		}
-		return $return;
-	}
 }
 
 function swpd_do_action_debug( $action_to_debug, $callback ) {
