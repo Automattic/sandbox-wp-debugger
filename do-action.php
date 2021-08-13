@@ -56,13 +56,6 @@ class SWPD_do_action {
 		}
 		return $return;
 	}
-
-	public function log( $message, $data ) {
-		error_log( $message . ' ' . var_export( $data, true ) );
-		if ( true === defined( 'WP_CLI' ) && true === WP_CLI ) {
-			WP_CLI::Line( $message . ' ' . var_export( $data, true ) );
-		}
-	}
 }
 
 function swpd_do_action_debug( $action_to_debug, $callback ) {
