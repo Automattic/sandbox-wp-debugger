@@ -106,7 +106,7 @@ class SWPD_WP_Redirect {
 			$slice++;	
 		}
 		$backtrace = array_slice( davidbinovec_debug_backtrace( true ), $slice );
-		swpd_log( $used_redirection_function, $message, $variables, $debug_data, str_replace( ', apply_filters(\'wp_redirect_status\'), WP_Hook->apply_filters, SWPD_WP_Redirect->report', '', join( $backtrace, ' ' ) ) );
+		swpd_log( $used_redirection_function, $message, $variables, $debug_data, str_replace( ', apply_filters(\'wp_redirect_status\'), WP_Hook->apply_filters, SWPD_WP_Redirect->report', '', implode( ' ', $backtrace ) ) );
 
 		return $status;
 	}
