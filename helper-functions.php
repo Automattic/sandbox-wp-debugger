@@ -18,5 +18,5 @@ function davidbinovec_debug_backtrace( $return = false ) {
 	if ( true === $return ) {
 		return $output;
 	}
-    error_log( join( $output, ' ' ) . ' ' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
+    error_log( implode( ' ', $output ) . ' ' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
 }
