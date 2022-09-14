@@ -30,7 +30,7 @@ class SWPD_Batcache_Debug {
 		$message = array();
 
 		if ( false === empty( $_GET ) ) {
-			$message[] = sprintf( 'The request would bypass Batcache due to following query args: %s.', join( ', ', array_keys( $_GET ) ) );
+			$message[] = sprintf( 'The request would bypass Batcache due to following query args: %s.', implode( ', ', array_keys( $_GET ) ) );
 		}
 
 		// Compose diff of default and total list of ignored args.
@@ -49,10 +49,10 @@ class SWPD_Batcache_Debug {
 		}
 		
 		if ( false === empty( $client_specific_ignored_args ) ) {
-			$message[] = sprintf( 'Batcached is whitelisting following client specific params: %s', join( ', ', $client_specific_ignored_args ) );
+			$message[] = sprintf( 'Batcached is whitelisting following client specific params: %s', implode( ', ', $client_specific_ignored_args ) );
 		}
 		if ( false === empty( $globally_ignored_args ) ) {
-			$message[] = sprintf( 'Batcache is whitelisting following global/default params: %s', join( ',', $globally_ignored_args ) );
+			$message[] = sprintf( 'Batcache is whitelisting following global/default params: %s', implode( ',', $globally_ignored_args ) );
 		}
 
 		if ( false === empty( $message ) ) {
