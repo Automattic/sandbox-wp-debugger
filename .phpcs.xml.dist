@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<ruleset
+		name="Sandbox WP Debugger"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:noNamespaceSchemaLocation="vendor/squizlabs/php_codesniffer/phpcs.xsd">
+	<description>Custom ruleset for VIP Sandbox Helper</description>
+
+	<!-- What to scan -->
+	<file>./</file>
+
+	<!-- Ignoring Files and Folders:
+		https://github.com/squizlabs/PHP_CodeSniffer/wiki/Advanced-Usage#ignoring-files-and-folders -->
+	<exclude-pattern>./node_modules/</exclude-pattern>
+	<exclude-pattern>./vendor/</exclude-pattern>
+	<exclude-pattern>./build/</exclude-pattern>
+
+	<!-- How to scan -->
+	<arg value="sp"/> <!-- Show sniff and progress -->
+	<arg name="colors"/> <!-- Show results with colors. Disable if working on Windows -->
+	<arg name="basepath" value="."/> <!-- Strip the file paths down to the relevant bit -->
+	<arg name="parallel" value="8"/> <!-- Enables parallel processing when available for faster results -->
+	<arg name="extensions" value="php,js"/> <!-- Limit to PHP and JS files -->
+
+	<!-- Rules: Check PHP version compatibility - see
+		https://github.com/PHPCompatibility/PHPCompatibilityWP -->
+	<rule ref="PHPCompatibilityWP"/>
+	<!-- For help in understanding this testVersion:
+		https://github.com/PHPCompatibility/PHPCompatibility#sniffing-your-code-for-compatibility-with-specific-php-versions -->
+	<config name="testVersion" value="8.0-"/>
+
+	<!-- Rules: VIP Coding Standards - see
+		https://github.com/Automattic/VIP-Coding-Standards -->
+	<rule ref="WordPress-VIP-Go"/>
+
+	<!-- Rules: WordPress Coding Standards - see
+		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
+	<rule ref="WordPress-Extra"/> <!-- Includes WordPress-Core -->
+	<rule ref="WordPress-Docs"/>
+	<!-- For help in understanding this minimum_supported_wp_version:
+		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties#setting-minimum-supported-wp-version-for-all-sniffs-in-one-go-wpcs-0140 -->
+	<config name="minimum_supported_wp_version" value="6.1.1"/>
+
+	<!-- Add in our custom text domain -->
+	<!-- For help in understanding this text_domain property:
+	https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties#internationalization-setting-your-text-domain -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="vip-sandbox-helper"/> <!-- Change this value to your theme or plugin slug. -->
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="SWPD"/> <!-- Change this value to your theme or plugin prefix. -->
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Set minimum cron interval to 5 minutes -->
+	<rule ref="WordPress.WP.CronInterval">
+		<properties>
+			<property name="min_interval" value="300"/>
+		</properties>
+	</rule>
+
+	<!-- Reintroduce some whitespace rules WordPressVIPMinimum removes -->
+	<rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EmptyLines">
+		<severity>5</severity>
+	</rule>
+	<rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EndLine">
+		<severity>5</severity>
+	</rule>
+
+	<!-- Ignore Squiz.Commenting.FileComment.MissingPackageTag -->
+	<rule ref="Squiz.Commenting.FileComment.MissingPackageTag">
+		<exclude name="Squiz.Commenting.FileComment.MissingPackageTag" />
+	</rule>
+
+</ruleset>
