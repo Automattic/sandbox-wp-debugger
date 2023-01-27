@@ -8,7 +8,7 @@ namespace SWPD;
 /**
  * SWPD\Do_Action Class.
  */
-class Do_Action {
+class Do_Action extends Base {
 
 	/**
 	 * The hook name to debug.

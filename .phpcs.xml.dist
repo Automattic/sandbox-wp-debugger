@@ -46,7 +46,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="vip-sandbox-helper"/> <!-- Change this value to your theme or plugin slug. -->
+				<element value="sandbox-wp-debugger"/> <!-- Change this value to your theme or plugin slug. -->
 			</property>
 		</properties>
 	</rule>

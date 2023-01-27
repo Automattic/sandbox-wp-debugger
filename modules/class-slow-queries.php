@@ -17,6 +17,27 @@ class Slow_Queries extends Base {
 	public string $debugger_name = 'SQL Queries';
 
 	/**
+	 * Constructor; set up all of the necessary WordPress hooks.
+	 */
+	public function __construct() {
+		add_action( 'shutdown', array( $this, 'shutdown' ), PHP_INT_MAX );
+	}
+
+	/**
+	 * Adds Sandbox WP Debugger support to output all SQL Queries.
+	 *
+	 * @return void
+	 */
+	public function shutdown(): void {
+		if ( function_exists( 'swpd_log' ) && defined( 'VIP_SWPD_SQL_DEBUG' ) && true === VIP_SWPD_SQL_DEBUG ) {
+			$slow_queries = new SlowQueries();
+			$this->log(
+				message: $slow_queries->render_sql_queries(),
+			);
+		}
+	}
+
+	/**
 	 * Renders SQL query summary and normalizes queries.
 	 *
 	 * @return string Debug data for summarized queries.

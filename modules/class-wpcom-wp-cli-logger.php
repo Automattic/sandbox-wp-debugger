@@ -10,7 +10,7 @@ namespace SWPD;
 /**
  * SWPD\WPCOM_WP_CLI_Logger Class.
  */
-class WPCOM_WP_CLI_Logger extends Base {
+class WPCOM_WP_CLI_Logger {
 
 	/**
 	 * Class constructor.
@@ -91,5 +91,11 @@ class WPCOM_WP_CLI_Logger extends Base {
 	 */
 	public function error( string $message = '' ): void {
 		$this->_line( $message, 'Error', '%R', STDERR );
+	}
+}
+
+if ( true === defined( 'WP_CLI' ) && WP_CLI ) {
+	if ( ! version_compare( WP_CLI_VERSION, '1.0.0', '>=' ) ) {
+		WP_CLI::set_logger( new SWPD\WPCOM_WP_CLI_Logger( true ) );
 	}
 }

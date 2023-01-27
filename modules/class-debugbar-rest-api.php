@@ -12,7 +12,7 @@ namespace SWPD;
 /**
  * SWPD\DebugBar_REST_API Class.
  */
-class DebugBar_REST_API {
+class DebugBar_REST_API extends Base {
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
