@@ -29,12 +29,9 @@ class Slow_Queries extends Base {
 	 * @return void
 	 */
 	public function shutdown(): void {
-		if ( function_exists( 'swpd_log' ) && defined( 'VIP_SWPD_SQL_DEBUG' ) && true === VIP_SWPD_SQL_DEBUG ) {
-			$slow_queries = new SlowQueries();
-			$this->log(
-				message: $slow_queries->render_sql_queries(),
-			);
-		}
+		$this->log(
+			message: $this->render_sql_queries(),
+		);
 	}
 
 	/**

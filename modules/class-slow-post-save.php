@@ -60,5 +60,3 @@ class Slow_Post_Save extends Base {
 		return $location;
 	}
 }
-
-new SWPD\Slow_Post_Save();

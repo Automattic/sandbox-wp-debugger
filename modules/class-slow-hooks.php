@@ -146,5 +146,3 @@ class Slow_Hooks extends Base {
 	}
 
 }
-
-new SWPD\Slow_Hooks();

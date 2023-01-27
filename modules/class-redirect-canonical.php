@@ -14,27 +14,27 @@ class Redirect_Canonical extends Base {
 	 *
 	 * @var string
 	 */
-	public string $debugger_name = 'Redirect Canoniocal';
+	public string $debugger_name = 'Redirect Canonical';
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
 	 */
 	public function __construct() {
-		add_action( 'init', array( $this, 'swap_redirect_canoniocal' ), 10, 0 );
+		add_action( 'init', array( $this, 'swap_redirect_canonical' ), 10, 0 );
 	}
 
 	/**
-	 * Swaps out the core redirect_canoniocal for our custom version.
+	 * Swaps out the core redirect_canonical for our custom version.
 	 *
 	 * @return void
 	 */
-	public function swap_redirect_canoniocal(): void {
+	public function swap_redirect_canonical(): void {
 		remove_action( 'template_redirect', 'redirect_canonical' );
 		add_action( 'template_redirect', array( $this, 'redirect_canonical' ) );
 	}
 
 	/**
-	 * Custom redirect_canoniocal that adds debugging.
+	 * Custom redirect_canonical that adds debugging.
 	 *
 	 * @param  string $location     The URL being redirected from.
 	 * @param  string $redirect_url The URL being redirected to.
@@ -46,7 +46,7 @@ class Redirect_Canonical extends Base {
 		$data    = array( 'redirect_url' => $redirect_url );
 
 		$this->log(
-			message: $response_message,
+			message: $message,
 			data: $data,
 			backtrace: true
 		);
@@ -56,7 +56,7 @@ class Redirect_Canonical extends Base {
 	// phpcs:disable
 
 	/**
-	 * Custom redirect_canoniocal that adds debugging.
+	 * Custom redirect_canonical that adds debugging.
 	 *
 	 * @param  string  $requested_url Optional. The URL that was requested, used to figure if redirect is needed.
 	 * @param  boolean $do_redirect   Optional. Redirect to the new URL.
@@ -867,5 +867,3 @@ class Redirect_Canonical extends Base {
 	// phpcs:enable
 
 }
-
-new SWPD\Redirect_Canonical();

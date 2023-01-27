@@ -33,7 +33,7 @@ class REST_Requests extends Base {
 	 *
 	 * @return null                     Null to not hijack the filter.
 	 */
-	public function rest_pre_dispatch( mixed $result, WP_REST_Server $server, WP_REST_Request $request ): mixed {
+	public function rest_pre_dispatch( mixed $result, \WP_REST_Server $server, \WP_REST_Request $request ): mixed {
 		global $swpd_timers_rest;
 
 		if ( ! is_array( $swpd_timers_rest ) ) {
@@ -69,7 +69,7 @@ class REST_Requests extends Base {
 	 *
 	 * @return WP_HTTP_Response          Unchanged $result.
 	 */
-	public function rest_post_dispatch( WP_HTTP_Response $result, WP_REST_Server $server, WP_REST_Request $request ): WP_HTTP_Response {
+	public function rest_post_dispatch( \WP_HTTP_Response $result, \WP_REST_Server $server, \WP_REST_Request $request ): \WP_HTTP_Response {
 		global $swpd_timers_rest;
 
 		$time  = hrtime( true ) - $swpd_timers_rest[ $request->get_route() ];
@@ -95,5 +95,3 @@ class REST_Requests extends Base {
 		return $result;
 	}
 }
-
-new SWPD\REST_Requests();

@@ -58,5 +58,3 @@ class Slow_Bulk_Update extends Base {
 		return $location;
 	}
 }
-
-new SWPD\Slow_Bulk_Update();

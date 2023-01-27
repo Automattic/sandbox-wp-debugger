@@ -106,5 +106,3 @@ class DebugBar_REST_API extends Base {
 	}
 
 }
-
-new SWPD\DebugBar_REST_API();

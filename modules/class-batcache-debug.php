@@ -76,5 +76,3 @@ class Batcache_Debug extends Base {
 		}
 	}
 }
-
-new SWPD\Batcache_Debug();

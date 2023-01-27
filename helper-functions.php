@@ -18,33 +18,33 @@
 function swpd_log( string $function = '', string $message = '', array $data = array(), $debug_data = array(), $backtrace = true, bool $error_log = true ): array {
 	$output = array();
 
-	$output[] = array( '== Sandbox WP Debug : ' . $function . ' Debug ==' );
-	$output[] = array( $message );
+	$output[] = '== Sandbox WP Debug : ' . $function . ' Debug ==';
+	$output[] = $message;
 
 	if ( true === is_array( $data ) && false === empty( $data ) ) {
 		foreach ( $data as $key => $value ) {
-			$output[] = array( $key . ': ' . var_export( $value, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
+			$output[] = $key . ': ' . var_export( $value, true ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		}
 	}
 
 	if ( true === is_array( $debug_data ) && false === empty( $debug_data ) ) {
-		$output[] = array( '=== Aditional debug data: ===' );
+		$output[] = '=== Aditional debug data: ===';
 		foreach ( $debug_data as $key => $value ) {
-			$output[] = array( $key . ': ' . var_export( $value, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
+			$output[] = $key . ': ' . var_export( $value, true ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		}
 	}
 
-	$output[] = array( 'Blog ID: ' . get_current_blog_id() );
+	$output[] = 'Blog ID: ' . get_current_blog_id();
 
 	if ( true === $backtrace ) {
 		$backtrace = wp_debug_backtrace_summary(); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_wp_debug_backtrace_summary
 	}
 
 	if ( is_string( $backtrace ) ) {
-		$output[] = array( 'Backtrace: ' . $backtrace );
+		$output[] = 'Backtrace: ' . $backtrace;
 	}
 
-	$output[] = array( '== / ' . $function . ' ==' );
+	$output[] = '== / ' . $function . ' ==';
 
 	if ( true === $error_log ) {
 		foreach ( $output as $line ) {

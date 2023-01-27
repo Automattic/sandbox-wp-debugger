@@ -11,6 +11,13 @@ namespace SWPD;
 class Memcache extends Base {
 
 	/**
+	 * Name of the SWPD Debugger running.
+	 *
+	 * @var string
+	 */
+	public string $debugger_name = 'Memcache Object Cache';
+
+	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
 	 */
 	public function __construct() {
@@ -273,5 +280,3 @@ class Memcache extends Base {
 	}
 
 }
-
-new SWPD\Memcache();
