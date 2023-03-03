@@ -17,9 +17,23 @@ class Slow_Queries extends Base {
 	public string $debugger_name = 'SQL Queries';
 
 	/**
+	 * Arguments for the Slow Query debugger.
+	 *
+	 * @var array
+	 */
+	public array $args = array();
+
+	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
 	 */
-	public function __construct() {
+	public function __construct( array $args = array() ) {
+		$defaults = array(
+			'debug' => false,
+			'limit' => -1,
+		);
+
+		$this->args = wp_parse_args( $args, $defaults );
+
 		add_action( 'shutdown', array( $this, 'shutdown' ), PHP_INT_MAX );
 	}
 
@@ -132,7 +146,8 @@ class Slow_Queries extends Base {
 				}
 
 				$total_time += $elapsed;
-				if ( ++$counter > 500 ) {
+
+				if ( $this->args['limit'] > 0 && ++$counter > $this->args['limit'] ) {
 					continue;
 				}
 
@@ -144,8 +159,6 @@ class Slow_Queries extends Base {
 					$ts = 0;
 				}
 
-				$query = esc_html( $query );
-
 				// Gather data for the variables dbhname, host, port, name, tcp, and elapsed.
 				if ( isset( $connection['elapsed'] ) ) {
 					$connected = "Connected {$connection['dbhname']} to {$connection['host']}:{$connection['port']} ({$connection['name']}) in " . sprintf( '%0.2f', 1000 * $connection['elapsed'] ) . 'ms';
@@ -155,8 +168,21 @@ class Slow_Queries extends Base {
 					$connected = '';
 				}
 
-				$debug = wp_strip_all_tags( $debug );
-				$out  .= $query . PHP_EOL . "$connected $debug #{$counter} (" . number_format( sprintf( '%0.1f', $elapsed * 1000 ), 1, '.', ',' ) . 'ms @ ' . sprintf( '%0.2f', 1000 * ( $ts - $timestart ) ) . 'ms)' . PHP_EOL . PHP_EOL;
+				// Clean up the whitespace.
+				$query = trim( preg_replace( '/\s+/', ' ', $query ) );
+
+				// Add a semicolon to the end of the SQL if it doesn't have one.
+				if ( ! str_ends_with( $query, ';' ) ) {
+					$query .= ';';
+				}
+
+				if ( $this->args['debug'] ) {
+					$debug = PHP_EOL . wp_strip_all_tags( "$connected $debug #{$counter} (" . number_format( sprintf( '%0.1f', $elapsed * 1000 ), 1, '.', ',' ) . 'ms @ ' . sprintf( '%0.2f', 1000 * ( $ts - $timestart ) ) . 'ms)' );
+				} else {
+					$debug = '';
+				}
+
+				$out  .= $query . $debug . PHP_EOL . PHP_EOL;
 			}
 		}
 
