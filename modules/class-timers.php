@@ -92,5 +92,3 @@ class Timers extends Base {
 		);
 	}
 }
-
-new \SWPD\Timers();
