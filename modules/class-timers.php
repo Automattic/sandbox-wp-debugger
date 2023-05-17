@@ -79,16 +79,25 @@ class Timers extends Base {
 			$memory_usage = 0;
 		}
 
-		$message = sprintf( 'Time Taken: %s, Memory Used: %s', $time_usage, $memory_usage );
-		/*$this->log(
-			message: $message,
-			backtrace: false
-		);*/
-
-		$message = sprintf( 'Page Generation: %s, Shutdown: %s', $this->early_timer, $late_timer );
+		$message = sprintf(
+			'Page Generation: %s, Shutdown: %s, Memory: %s/%s (%s%%)',
+			self::human_time( $this->early_timer ),
+			self::human_time( $late_timer - $this->early_timer ),
+			size_format( $memory ),
+			size_format( $memory_limit ),
+			number_format( $memory_usage, 2 ),
+		);
 		$this->log(
 			message: $message,
 			backtrace: false
 		);
+	}
+
+	function human_time( $seconds ) {
+		if ( $seconds >= 1 ) {
+			return number_format( $seconds, 3 ) . 's';
+		} else {
+			return number_format( $seconds * 1000, 3 ) . 'ms';
+		}
 	}
 }

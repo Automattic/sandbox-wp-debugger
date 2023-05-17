@@ -18,7 +18,7 @@
 function swpd_log( string $function = '', string $message = '', array $data = array(), $debug_data = array(), $backtrace = true, bool $error_log = true ): array {
 	$output = array();
 
-	$output[] = '== Sandbox WP Debug : ' . $function . ' Debug ==';
+	$output[] = sprintf( '== Sandbox WP Debug : %s Debug (Blog ID: %d) ==', $function, get_current_blog_id() );
 	$output[] = $message;
 
 	if ( true === is_array( $data ) && false === empty( $data ) ) {
@@ -33,8 +33,6 @@ function swpd_log( string $function = '', string $message = '', array $data = ar
 			$output[] = $key . ': ' . var_export( $value, true ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		}
 	}
-
-	$output[] = 'Blog ID: ' . get_current_blog_id();
 
 	if ( true === $backtrace ) {
 		$backtrace = wp_debug_backtrace_summary(); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_wp_debug_backtrace_summary
@@ -51,6 +49,8 @@ function swpd_log( string $function = '', string $message = '', array $data = ar
 			error_log( $line ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 	}
+
+	$output = apply_filters( 'swpd_log', $output );
 
 	return $output;
 }
