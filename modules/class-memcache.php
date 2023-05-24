@@ -17,11 +17,15 @@ class Memcache extends Base {
 	 */
 	public string $debugger_name = 'Memcache Object Cache';
 
+	public static bool $details = false;
+
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
 	 */
-	public function __construct() {
+	public function __construct( $details = false ) {
 		add_action( 'shutdown', array( $this, 'memcache_debug' ), PHP_INT_MAX );
+
+		self::$details = $details;
 	}
 
 	/**
@@ -130,29 +134,31 @@ class Memcache extends Base {
 
 		// BEGIN Group Details.
 
-		foreach ( $groups as $group ) {
-			$group_name = $group;
-			if ( empty( $group_name ) ) {
-				$group_name = 'default';
+		if ( true === self::$details ) {
+			foreach ( $groups as $group ) {
+				$group_name = $group;
+				if ( empty( $group_name ) ) {
+					$group_name = 'default';
+				}
+
+				$group_ops_line = '';
+				foreach ( $wp_object_cache->group_ops[ $group ] as $index => $arr ) {
+					$group_ops_line .= sprintf( '%3d ', $index );
+					$group_ops_line .= $this->get_group_ops_line( $index, $arr );
+				}
+
+				$group_details_table[] = array(
+					trim( $group_titles[ $group ] ),
+					$group_ops_line,
+				);
+
 			}
 
-			$group_ops_line = '';
-			foreach ( $wp_object_cache->group_ops[ $group ] as $index => $arr ) {
-				$group_ops_line .= sprintf( '%3d ', $index );
-				$group_ops_line .= $this->get_group_ops_line( $index, $arr );
+			$group_detail_output = sprintf( "=== Details for Groups ===\n\n" );
+
+			foreach ( $group_details_table as $group_detail ) {
+				$group_detail_output .= sprintf( "%s ↴ \n%s\n\n", $group_detail[0], $group_detail[1] );
 			}
-
-			$group_details_table[] = array(
-				trim( $group_titles[ $group ] ),
-				$group_ops_line,
-			);
-
-		}
-
-		$group_detail_output = sprintf( "=== Details for Groups ===\n\n" );
-
-		foreach ( $group_details_table as $group_detail ) {
-			$group_detail_output .= sprintf( "%s ↴ \n%s\n\n", $group_detail[0], $group_detail[1] );
 		}
 
 		$this->log(
