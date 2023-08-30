@@ -188,7 +188,7 @@ class Slow_Templates extends Base {
 	 * @return string The time in a human-readable format.
 	 */
 	public function human_time( $seconds ) {
-	if ( $seconds >= 1 ) {
+		if ( $seconds >= 1 ) {
 			return number_format( $seconds, 3 ) . 's';
 		} elseif ( $seconds >= 1e-3 ) {
 			return number_format( $seconds * 1e3, 3 ) . 'ms';
