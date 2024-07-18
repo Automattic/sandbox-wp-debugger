@@ -44,7 +44,7 @@ class Apply_Filters extends Base {
 	 * @param string $filter       The hook name to debug.
 	 * @param bool   $only_changed Only show when filter values change, defaults to false.
 	 */
-	public function __construct( string $filter, $only_changed = false ) {
+	public function __construct( string $filter, bool $only_changed = false ) {
 		$this->filter_to_debug = $filter;
 		$this->only_changed    = $only_changed;
 
@@ -61,7 +61,7 @@ class Apply_Filters extends Base {
 	 *
 	 * @return mixed          The filtered value, if it is a filter.
 	 */
-	public function filter_all( string $action, $value = null ) {
+	public function filter_all( string $action, mixed $value = null ): mixed {
 		if ( current_filter() === $this->filter_to_debug ) {
 			$this->add_debugging( $value );
 		}
@@ -75,7 +75,7 @@ class Apply_Filters extends Base {
 	 *
 	 * @return mixed       The filtered value, if it is a filter.
 	 */
-	public function add_debugging( $value ) {
+	public function add_debugging( mixed $value ): mixed {
 		global $wp_filter;
 		$this->swpd_filter_prev_value = $value;
 		if ( true === array_key_exists( $this->filter_to_debug, $wp_filter ) ) {
@@ -86,7 +86,7 @@ class Apply_Filters extends Base {
 				foreach ( $thes_ as $idx => $the_ ) {
 					$wp_filter[ $this->filter_to_debug ]->callbacks[ $priority ][ $idx ] = $the_;
 					$wp_filter[ $this->filter_to_debug ]->callbacks[ $priority ][ _wp_filter_build_unique_id( $this->filter_to_debug, array( $this, 'debug' ), $priority ) . ( $i++ ) ] = array(
-						'function'      => function( $value ) use ( $idx, $priority, $the_ ) {
+						'function'      => function ( $value ) use ( $idx, $priority, $the_ ) {
 							$this->debug( $value, $idx, $the_, $priority );
 							return $value; },
 						'accepted_args' => 1,
@@ -106,7 +106,7 @@ class Apply_Filters extends Base {
 	 *
 	 * @return mixed           The filtered value, if it is a filter.
 	 */
-	public function debug( $value, $idx, $the_, $priority ) {
+	public function debug( mixed $value, mixed $idx, mixed $the_, int $priority ): mixed {
 		if ( false === $this->only_changed || $this->swpd_filter_prev_value !== $value ) {
 			$data = array(
 				'initial value' => $this->swpd_filter_prev_value,
@@ -134,7 +134,7 @@ class Apply_Filters extends Base {
 	 *
 	 * @return string      The filename and line where the function was called.
 	 */
-	public function defined_in( $the_ ) {
+	public function defined_in( array $the_ ): string {
 		$return = 'N/A';
 
 		// Handle function and closures.
@@ -151,16 +151,4 @@ class Apply_Filters extends Base {
 
 		return $return;
 	}
-}
-
-/**
- * Registers a new filter debugger.
- *
- * @param  string $filter_to_debug The hook name to debug.
- * @param  bool   $only_changed    Only show when filter values change, defaults to false.
- *
- * @return void
- */
-function swpd_apply_filter_debug( $filter_to_debug, $only_changed = false ) {
-	new SWPD\Apply_Filters( $filter_to_debug, $only_changed );
 }

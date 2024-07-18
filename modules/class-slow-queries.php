@@ -25,6 +25,8 @@ class Slow_Queries extends Base {
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
+	 *
+	 * @param array $args Arguments for the Slow Query debugger.
 	 */
 	public function __construct( array $args = array() ) {
 		$defaults = array(
@@ -69,7 +71,7 @@ class Slow_Queries extends Base {
 				if ( ! isset( $query_type_counts[ $query ] ) ) {
 					$query_type_counts[ $query ] = 0;
 				}
-				$query_type_counts[ $query ]++;
+				++$query_type_counts[ $query ];
 				$query_types[ $query ] += array_key_exists( 'elapsed', $wpdb->queries[ $i ] ) ? $wpdb->queries[ $i ]['elapsed'] : $wpdb->queries[ $i ][1];
 			}
 		}
@@ -79,7 +81,7 @@ class Slow_Queries extends Base {
 		$count        = 0;
 		$max_time_len = 0;
 		foreach ( $query_types as $q => $t ) {
-			$count++;
+			++$count;
 			$max_time_len = max( $max_time_len, strlen( sprintf( '%0.2f', $t * 1000 ) ) );
 			$out         .= sprintf(
 				'%s queries for %sms » %s' . PHP_EOL,
@@ -182,7 +184,7 @@ class Slow_Queries extends Base {
 					$debug = '';
 				}
 
-				$out  .= $query . $debug . PHP_EOL . PHP_EOL;
+				$out .= $this->highlight_sql( $query ) . $debug . PHP_EOL . PHP_EOL;
 			}
 		}
 
@@ -203,5 +205,112 @@ class Slow_Queries extends Base {
 		$out = apply_filters( 'swpdb_render_sql_queries_output', $out );
 
 		return $out;
+	}
+
+	/**
+	 * Highlights SQL queries.
+	 *
+	 * This method takes a SQL query as input and returns the query with syntax highlighting applied.
+	 *
+	 * @param string $sql The SQL query to highlight.
+	 *
+	 * @return string The highlighted SQL query.
+	 */
+	public function highlight_sql( string $sql ): string {
+		$keywords = array(
+			'SELECT',
+			'FROM',
+			'WHERE',
+			'AND',
+			'OR',
+			'INSERT',
+			'INTO',
+			'VALUES',
+			'UPDATE',
+			'SET',
+			'DELETE',
+			'CREATE',
+			'TABLE',
+			'ALTER',
+			'DROP',
+			'JOIN',
+			'INNER',
+			'LEFT',
+			'RIGHT',
+			'ON',
+			'AS',
+			'DISTINCT',
+			'GROUP',
+			'BY',
+			'ORDER',
+			'HAVING',
+			'LIMIT',
+			'OFFSET',
+			'UNION',
+			'ALL',
+			'COUNT',
+			'SUM',
+			'AVG',
+			'MIN',
+			'MAX',
+			'LIKE',
+			'IN',
+			'BETWEEN',
+			'IS',
+			'NULL',
+			'NOT',
+			'PRIMARY',
+			'KEY',
+			'FOREIGN',
+			'REFERENCES',
+			'DEFAULT',
+			'AUTO_INCREMENT',
+		);
+
+		$functions = array(
+			'COUNT',
+			'SUM',
+			'AVG',
+			'MIN',
+			'MAX',
+			'NOW',
+			'CURDATE',
+			'CURTIME',
+			'DATE',
+			'TIME',
+			'YEAR',
+			'MONTH',
+			'DAY',
+			'HOUR',
+			'MINUTE',
+			'SECOND',
+			'TIMESTAMP',
+		);
+
+		$colors = array(
+			'keyword'  => "\033[1;34m", // Blue.
+			'function' => "\033[1;32m", // Green.
+			'string'   => "\033[1;33m", // Yellow.
+			'comment'  => "\033[1;90m", // Bright Black (Gray).
+			'reset'    => "\033[0m",
+		);
+
+		// Highlight comments.
+		$sql = preg_replace( '/\/\*.*?\*\//s', $colors['comment'] . '$0' . $colors['reset'], $sql );
+
+		// Highlight strings.
+		$sql = preg_replace( '/\'[^\']*\'/', $colors['string'] . '$0' . $colors['reset'], $sql );
+
+		// Highlight keywords.
+		foreach ( $keywords as $keyword ) {
+			$sql = preg_replace( '/\b' . $keyword . '\b/i', $colors['keyword'] . '$0' . $colors['reset'], $sql );
+		}
+
+		// Highlight functions.
+		foreach ( $functions as $function ) {
+			$sql = preg_replace( '/\b' . $function . '\b/i', $colors['function'] . '$0' . $colors['reset'], $sql );
+		}
+
+		return $sql;
 	}
 }

@@ -6,19 +6,19 @@
 /**
  * Generates debug data for output or error logging.
  *
- * @param  string $function   The type of debugging function that is running.
+ * @param  string $dbg_function   The type of debugging function that is running.
  * @param  string $message    A message to add to the debugging output.
  * @param  array  $data       A key-value array of data to add.
  * @param  array  $debug_data A secondary key-value array of data to add.
- * @param  mixed  $backtrace  Whether or not to include a backtrace. Setting to a string will include a custom backtrace.
+ * @param  bool   $backtrace  Whether or not to include a backtrace. Setting to a string will include a custom backtrace.
  * @param  bool   $error_log  Send the output to error_log() as well. Defaults to true.
  *
  * @return string[]           An array of strings representing the debug data.
  */
-function swpd_log( string $function = '', string $message = '', array $data = array(), $debug_data = array(), $backtrace = true, bool $error_log = true ): array {
+function swpd_log( string $dbg_function = '', string $message = '', array $data = array(), array $debug_data = array(), bool $backtrace = true, bool $error_log = true ): array {
 	$output = array();
 
-	$output[] = sprintf( '== Sandbox WP Debug : %s Debug (Blog ID: %d) ==', $function, get_current_blog_id() );
+	$output[] = sprintf( '== Sandbox WP Debug : %s Debug (Blog ID: %d) ==', $dbg_function, get_current_blog_id() );
 	$output[] = $message;
 
 	if ( true === is_array( $data ) && false === empty( $data ) ) {
@@ -42,7 +42,7 @@ function swpd_log( string $function = '', string $message = '', array $data = ar
 		$output[] = 'Backtrace: ' . $backtrace;
 	}
 
-	$output[] = '== / ' . $function . ' ==';
+	$output[] = '== / ' . $dbg_function . ' ==';
 
 	if ( true === $error_log ) {
 		foreach ( $output as $line ) {
@@ -58,27 +58,27 @@ function swpd_log( string $function = '', string $message = '', array $data = ar
 /**
  * Custom backtrace generator.
  *
- * @param  boolean $return Whether to return or echo, defaults to false (echo).
+ * @param  boolean $output Whether to return or echo, defaults to output (echo).
  *
  * @return array           An array of backtrace data.
  */
-function swpd_debug_backtrace( bool $return = false ) {
+function swpd_debug_backtrace( bool $output = true ): array {
 	$backtrace = debug_backtrace(); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
 	$output    = array();
 
 	foreach ( $backtrace as $call ) {
-		$function = $call['function'];
-		if ( __FUNCTION__ === $function ) {
+		$dbg_function = $call['function'];
+		if ( __FUNCTION__ === $dbg_function ) {
 			continue;
 		}
 
-		if ( true === in_array( $function, array( 'apply_filters', 'do_action', 'do_action_ref_array' ) ) && true !== array_key_exists( 'class', $call ) ) {
-			$function .= sprintf( '( "%s" )', $call['args'][0] );
+		if ( true === in_array( $dbg_function, array( 'apply_filters', 'do_action', 'do_action_ref_array' ) ) && true !== array_key_exists( 'class', $call ) ) {
+			$dbg_function .= sprintf( '( "%s" )', $call['args'][0] );
 		}
 		$file = defined( 'ABSPATH' ) ? str_replace( constant( 'ABSPATH' ), '', $call['file'] ) : $call['file'];
-		array_push( $output, $function . ' ' . $file . ':' . $call['line'] );
+		array_push( $output, $dbg_function . ' ' . $file . ':' . $call['line'] );
 	}
-	if ( true === $return ) {
+	if ( false === $output ) {
 		return $output;
 	}
 
@@ -87,4 +87,37 @@ function swpd_debug_backtrace( bool $return = false ) {
 
 	// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	error_log( implode( ' ', $output ) . ' ' . $http_host . $request_uri );
+}
+
+
+/**
+ * Registers a new filter debugger.
+ *
+ * @param  string $filter_to_debug The hook name to debug.
+ * @param  bool   $only_changed    Only show when filter values change, defaults to false.
+ *
+ * @return void
+ */
+function swpd_apply_filter_debug( string $filter_to_debug, bool $only_changed = false ): void {
+	if ( class_exists( 'SWPD\Apply_Filters' ) ) {
+		new SWPD\Apply_Filters( $filter_to_debug, $only_changed );
+	} else {
+		swpd_log( 'Apply Filters', 'SWPD Apply Filters class not found.' );
+	}
+}
+
+/**
+ * Registers a new action debugger.
+ *
+ * @param  string $action_to_debug The hook name to debug.
+ * @param  mixed  $callback        A custom callback to run after each already registered callback.
+ *
+ * @return void
+ */
+function swpd_do_action_debug( string $action_to_debug, mixed $callback ): void {
+	if ( class_exists( 'SWPD\Do_Action' ) ) {
+		new SWPD\Do_Action( $action_to_debug, $callback );
+	} else {
+		swpd_log( 'Do Action', 'SWPD Do Action class not found.' );
+	}
 }

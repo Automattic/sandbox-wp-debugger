@@ -17,12 +17,19 @@ class Memcache extends Base {
 	 */
 	public string $debugger_name = 'Memcache Object Cache';
 
+	/**
+	 * Specifies whether to include details in the debug output.
+	 *
+	 * @var bool $details
+	 */
 	public static bool $details = false;
 
 	/**
-	 * Constructor; set up all of the necessary WordPress hooks.
+	 * Class constructor; set up all of the necessary WordPress hooks.
+	 *
+	 * @param bool $details Optional. Whether to include details in the debug output. Default false.
 	 */
-	public function __construct( $details = false ) {
+	public function __construct( bool $details = false ) {
 		add_action( 'shutdown', array( $this, 'memcache_debug' ), PHP_INT_MAX );
 
 		self::$details = $details;
@@ -40,6 +47,7 @@ class Memcache extends Base {
 
 		$total_memcache_time = 'Total query time: ' . number_format_i18n( sprintf( '%0.1f', $wp_object_cache->time_total * 1000 ), 1 ) . ' ms';
 		$total_memcache_size = 'Total size: ' . size_format( $wp_object_cache->size_total, 2 );
+		$group_detail_output = '';
 
 		$memcache_stats = array();
 
@@ -54,7 +62,7 @@ class Memcache extends Base {
 		}
 
 		$data = array_map(
-			function( $key, $value ) {
+			function ( $key, $value ) {
 				return array( $key, $value );
 			},
 			array_keys( $wp_object_cache->stats ),
@@ -170,12 +178,12 @@ class Memcache extends Base {
 	/**
 	 * Get the memcached Group Ops line.
 	 *
-	 * @param  mixed $index Unknown. The Index of something.
-	 * @param  array $arr   Unknown. The array of Group data.
+	 * @param mixed $index Unknown. The Index of something.
+	 * @param array $arr   Unknown. The array of Group data.
 	 *
-	 * @return string        The Group Ops line.
+	 * @return string      The Group Ops line.
 	 */
-	public function get_group_ops_line( $index, $arr ): string {
+	public function get_group_ops_line( mixed $index, array $arr ): string {
 		// operation.
 		$line = "{$arr[0]} ";
 
@@ -207,82 +215,4 @@ class Memcache extends Base {
 
 		return $line;
 	}
-
-	/**
-	 * Unicode safe version of str_pad()
-	 *
-	 * @see https://stackoverflow.com/a/73692927
-	 *
-	 * @param  string $string     The input string.
-	 * @param  int    $length     The length to pad the input string to.
-	 * @param  string $pad_string The string to pad the input string with.
-	 *
-	 * @return string             The padded string.
-	 */
-	public function unicode_safe_str_pad( string $string, int $length, string $pad_string = ' ' ): string {
-		$lines   = explode( "\n", $string );
-		$lengths = array_map( 'strlen', $lines );
-
-		$max_length = max( $lengths );
-
-		$times = $length - mb_strlen( $string ) >= 0 ? $length - mb_strlen( $string ) : 0;
-		$times = $length - $max_length;
-		return $string . str_repeat( $pad_string, $times );
-	}
-
-	/**
-	 * Builds a simple ASCII table out of data.
-	 *
-	 * @see https://stackoverflow.com/a/73692927
-	 *
-	 * @param  array $rows Array of rows to build a table with.
-	 *
-	 * @return string       The built ASCII table.
-	 */
-	public function array_to_ascii_table( array $rows = array() ): string {
-		if ( count( $rows ) === 0 ) {
-			return '';
-		}
-
-		$widths = array();
-
-		foreach ( $rows as $cells ) {
-			foreach ( $cells as $j => $cell ) {
-				$width = mb_strlen( $cell ) + 2;
-				if ( ( $width ) >= ( $widths[ $j ] ?? 0 ) ) {
-					$widths[ $j ] = $width;
-				}
-			}
-		}
-
-		$horizontal_bar = str_repeat( '─', array_sum( $widths ) + count( $widths ) - 1 );
-		$top_bar        = sprintf( '┌%s┐', $horizontal_bar );
-		$middle_bar     = sprintf( '├%s┤', $horizontal_bar );
-		$bottom_bar     = sprintf( '└%s┘', $horizontal_bar );
-
-		$result[] = $top_bar;
-
-		foreach ( $rows as $i => $cells ) {
-			$result[] = sprintf(
-				'│%s│',
-				implode(
-					'│',
-					array_map(
-						function ( $cell, $wall ): string {
-							return $this->unicode_safe_str_pad( " {$cell} ", $wall );
-						},
-						$cells,
-						$widths
-					)
-				)
-			);
-			if ( 0 === $i ) {
-				$result[] = $middle_bar;
-			}
-		}
-		$result[] = $bottom_bar;
-
-		return implode( PHP_EOL, $result );
-	}
-
 }

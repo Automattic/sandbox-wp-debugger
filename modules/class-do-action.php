@@ -30,7 +30,7 @@ class Do_Action extends Base {
 	 * @param string $filter   The hook name to debug.
 	 * @param mixed  $callback A custom callback to run after each already registered callback.
 	 */
-	public function __construct( $filter, $callback ) {
+	public function __construct( string $filter, mixed $callback ) {
 		$this->action_to_debug = $filter;
 		$this->callback        = $callback;
 		add_filter( 'all', array( $this, 'filter_all' ), 10, 2 );
@@ -44,7 +44,7 @@ class Do_Action extends Base {
 	 *
 	 * @return mixed          The filtered value, if it is a filter.
 	 */
-	public function filter_all( string $action, $value = null ) {
+	public function filter_all( string $action, mixed $value = null ): mixed {
 		if ( current_filter() === $this->action_to_debug ) {
 			$this->add_debugging( $value );
 		}
@@ -59,7 +59,7 @@ class Do_Action extends Base {
 	 *
 	 * @return mixed       The filtered value, if it is a filter.
 	 */
-	public function add_debugging( $value ) {
+	public function add_debugging( mixed $value ): mixed {
 		global $wp_filter;
 
 		if ( true === array_key_exists( $this->action_to_debug, $wp_filter ) ) {
@@ -72,7 +72,7 @@ class Do_Action extends Base {
 				foreach ( $thes_ as $idx => $the_ ) {
 					$wp_filter[ $this->action_to_debug ]->callbacks[ $priority ][ $idx ] = $the_;
 					$wp_filter[ $this->action_to_debug ]->callbacks[ $priority ][ _wp_filter_build_unique_id( $this->action_to_debug, array( $this, 'debug' ), $priority ) . ( $i++ ) ] = array(
-						'function'      => function( $value ) use ( $idx, $priority, $the_ ) {
+						'function'      => function ( $value ) use ( $idx, $priority, $the_ ) {
 							$this->debug( $value, $idx, $the_, $priority );
 							return $value; },
 						'accepted_args' => 1,
@@ -92,21 +92,8 @@ class Do_Action extends Base {
 	 *
 	 * @return mixed           The filtered value, if it is a filter.
 	 */
-	public function debug( $value, $idx, $the_, $priority ) {
+	public function debug( mixed $value, mixed $idx, mixed $the_, int $priority ): mixed {
 		( $this->callback )( $value, $idx, $the_, $priority );
 		return $value;
 	}
-
-}
-
-/**
- * Registers a new action debugger.
- *
- * @param  string $action_to_debug The hook name to debug.
- * @param  mixed  $callback        A custom callback to run after each already registered callback.
- *
- * @return void
- */
-function swpd_do_action_debug( string $action_to_debug, $callback ): void {
-	new SWPD\Do_Action( $action_to_debug, $callback );
 }

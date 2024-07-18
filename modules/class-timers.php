@@ -16,6 +16,11 @@ class Timers extends Base {
 	 */
 	public string $debugger_name = 'Timers';
 
+	/**
+	 * Represents the early timer.
+	 *
+	 * @var mixed $early_timer
+	 */
 	public $early_timer;
 
 	/**
@@ -32,7 +37,7 @@ class Timers extends Base {
 	 * @return void
 	 */
 	public function early_shutdown(): void {
-		$this->early_timer = microtime( true ) - $_SERVER['REQUEST_TIME_FLOAT'];
+		$this->early_timer = microtime( true ) - (float) $_SERVER['REQUEST_TIME_FLOAT'] ?? 0;
 	}
 
 	/**
@@ -41,8 +46,12 @@ class Timers extends Base {
 	 * @return void
 	 */
 	public function late_shutdown(): void {
-		//https://github.com/johnbillion/query-monitor/blob/4dbdd30f599a432e430be31e7501d5831417d2ae/collectors/overview.php#L62
-		$late_timer = microtime( true ) - $_SERVER['REQUEST_TIME_FLOAT'];
+		/**
+		 * Docs:
+		 *
+		 * @see https://github.com/johnbillion/query-monitor/blob/4dbdd30f599a432e430be31e7501d5831417d2ae/collectors/overview.php#L62
+		 */
+		$late_timer = microtime( true ) - (float) $_SERVER['REQUEST_TIME_FLOAT'] ?? 0;
 
 		if ( function_exists( 'memory_get_peak_usage' ) ) {
 			$memory = memory_get_peak_usage();
@@ -53,7 +62,7 @@ class Timers extends Base {
 		}
 
 		$time_limit = (int) ini_get( 'max_execution_time' );
-		$time_start = $_SERVER['REQUEST_TIME_FLOAT'];
+		$time_start = (float) $_SERVER['REQUEST_TIME_FLOAT'] ?? 0;
 
 		if ( ! empty( $time_limit ) ) {
 			$time_usage = ( 100 / $time_limit ) * $late_timer;
@@ -61,11 +70,11 @@ class Timers extends Base {
 			$time_usage = 0;
 		}
 
-		$memory_limit = ini_get( 'memory_limit' ) ?: '0';
+		$memory_limit       = ini_get( 'memory_limit' ) ? ini_get( 'memory_limit' ) : '0';
 		$memory_limit_bytes = (float) $memory_limit;
 		if ( $memory_limit_bytes ) {
 			$last = strtolower( substr( $memory_limit, -1 ) );
-			$pos = strpos( ' kmg', $last, 1 );
+			$pos  = strpos( ' kmg', $last, 1 );
 			if ( $pos ) {
 				$memory_limit_bytes *= pow( 1024, $pos );
 			}
@@ -93,7 +102,14 @@ class Timers extends Base {
 		);
 	}
 
-	function human_time( $seconds ) {
+	/**
+	 * Converts a given number of seconds into a human-readable time format.
+	 *
+	 * @param int $seconds The number of seconds to convert.
+	 *
+	 * @return string The human-readable time format.
+	 */
+	public function human_time( int $seconds ): string {
 		if ( $seconds >= 1 ) {
 			return number_format( $seconds, 3 ) . 's';
 		} else {

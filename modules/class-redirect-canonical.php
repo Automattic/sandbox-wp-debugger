@@ -36,12 +36,12 @@ class Redirect_Canonical extends Base {
 	/**
 	 * Custom redirect_canonical that adds debugging.
 	 *
-	 * @param  string $location     The URL being redirected from.
-	 * @param  string $redirect_url The URL being redirected to.
+	 * @param string $location     The URL being redirected from.
+	 * @param string $redirect_url The URL being redirected to.
 	 *
 	 * @return void
 	 */
-	public function redirect_canonical_log( $location, $redirect_url ) {
+	public function redirect_canonical_log( string $location, string $redirect_url ): void {
 		$message = '$redirect_url is being set via ' . $location;
 		$data    = array( 'redirect_url' => $redirect_url );
 
@@ -865,5 +865,4 @@ class Redirect_Canonical extends Base {
 	}
 
 	// phpcs:enable
-
 }

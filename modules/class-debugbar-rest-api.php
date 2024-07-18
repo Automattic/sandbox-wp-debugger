@@ -30,11 +30,11 @@ class DebugBar_REST_API extends Base {
 	 * Load plugins, template if `?debug` is added to URL.
 	 * Disable theme-y css/js, known cruft.
 	 *
-	 * @param  WP_REST_Server $wp_rest_server Server object.
+	 * @param \WP_REST_Server $wp_rest_server Server object.
 	 *
 	 * @return void
 	 */
-	public function rest_api_init( $wp_rest_server ) {
+	public function rest_api_init( \WP_REST_Server $wp_rest_server ): void {
 		if ( ! $this->is_rest_debug() ) {
 			return;
 		}
@@ -50,7 +50,7 @@ class DebugBar_REST_API extends Base {
 		foreach ( array( 'style_loader_src', 'script_loader_src' ) as $hook ) {
 			add_filter(
 				$hook,
-				function( $src, $handle ) {
+				function ( $src, $handle ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 					if ( false !== strpos( $src, '/themes/' ) ) {
 						return false;
 					}
@@ -62,19 +62,18 @@ class DebugBar_REST_API extends Base {
 		}
 		remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
 		remove_action( 'wp_print_styles', 'print_emoji_styles' );
-
 	}
 
 	/**
 	 * Output JSON in HTML.
 	 *
-	 * @param  array           $result         Response data to send to the client.
-	 * @param  WP_REST_Server  $wp_rest_server Server instance.
-	 * @param  WP_REST_Request $request        Request used to generate the response.
+	 * @param array            $result         Response data to send to the client.
+	 * @param \WP_REST_Server  $wp_rest_server Server instance.
+	 * @param \WP_REST_Request $request        Request used to generate the response.
 	 *
-	 * @return void|array      Response data to send to the client.
+	 * @return mixed      Response data to send to the client.
 	 */
-	public function rest_pre_echo_response( $result, $wp_rest_server, $request ) {
+	public function rest_pre_echo_response( array $result, \WP_REST_Server $wp_rest_server, \WP_REST_Request $request ): mixed {
 		if ( ! $this->is_rest_debug() ) {
 			return $result;
 		}
@@ -100,9 +99,10 @@ class DebugBar_REST_API extends Base {
 
 	/**
 	 * Helper for debugging arg.
+	 *
+	 * @return bool
 	 */
-	public function is_rest_debug() {
+	public function is_rest_debug(): bool {
 		return isset( $_GET['debug'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	}
-
 }

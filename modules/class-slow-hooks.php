@@ -96,7 +96,7 @@ class Slow_Hooks extends Base {
 	 *
 	 * @return mixed           If it's a filter, the value being filtered, unchanged
 	 */
-	public function hook_timer_stop( ...$value ): mixed {
+	public function hook_timer_stop( mixed ...$value ): mixed {
 		global $wp_current_filter;
 
 		$current_filter = $wp_current_filter[ count( $wp_current_filter ) - 1 ] ?? 'UNKNOWN';
@@ -144,5 +144,4 @@ class Slow_Hooks extends Base {
 
 		return (float) round( $time, 3 );
 	}
-
 }

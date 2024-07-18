@@ -38,8 +38,10 @@ class Slow_Templates extends Base {
 	 * @param string $template_file  The path to the template file.
 	 * @param bool   $load_once      Whether the template should be loaded just once.
 	 * @param array  $args           An array of possible arguments for the template part.
+	 *
+	 * @return void
 	 */
-	public function start_template_timer( $template_file, $load_once, $args ) {
+	public function start_template_timer( string $template_file, bool $load_once, array $args ): void {
 		// Remove the theme and child theme directory from the template file path.
 		$template_file_relative = str_replace( array( get_template_directory() . '/', get_stylesheet_directory() . '/' ), '', $template_file );
 
@@ -57,7 +59,6 @@ class Slow_Templates extends Base {
 			'name'       => $template_file_relative,
 			'start_time' => microtime( true ),
 		);
-
 	}
 
 	/**
@@ -66,8 +67,10 @@ class Slow_Templates extends Base {
 	 * @param string $template_file  The path to the template file.
 	 * @param bool   $load_once      Whether the template should be loaded just once.
 	 * @param array  $args           An array of possible arguments for the template part.
+	 *
+	 * @return void
 	 */
-	public function stop_template_timer( $template_file, $load_once, $args ) {
+	public function stop_template_timer( string $template_file, bool $load_once, array $args ): void {
 		// Remove the theme and child theme directory from the template file path.
 		$template_file_relative = str_replace( array( get_template_directory() . '/', get_stylesheet_directory() . '/' ), '', $template_file );
 
@@ -106,7 +109,7 @@ class Slow_Templates extends Base {
 		// Sort the timing data by execution time in descending order.
 		usort(
 			$timing_data,
-			function( $a, $b ) {
+			function ( $a, $b ) {
 				if ( ! isset( $a['execution_time'] ) || ! isset( $b['execution_time'] ) ) {
 					return 0;
 				}
@@ -147,7 +150,7 @@ class Slow_Templates extends Base {
 						$this->human_time( $data['execution_time'] ),
 						$calling_file
 					);
-					$count++;
+					++$count;
 				}
 			}
 		}
@@ -187,7 +190,7 @@ class Slow_Templates extends Base {
 	 *
 	 * @return string The time in a human-readable format.
 	 */
-	public function human_time( $seconds ) {
+	public function human_time( float $seconds ): string {
 		if ( $seconds >= 1 ) {
 			return number_format( $seconds, 3 ) . 's';
 		} elseif ( $seconds >= 1e-3 ) {
@@ -198,5 +201,4 @@ class Slow_Templates extends Base {
 			return number_format( $seconds * 1e9, 3 ) . 'ns';
 		}
 	}
-
 }

@@ -27,9 +27,9 @@ class REST_Requests extends Base {
 	/**
 	 * Initiate debugging and timers.
 	 *
-	 * @param  mixed           $result  Response to replace the requested version with. Can be anything a normal endpoint can return, or null to not hijack the request.
-	 * @param  WP_REST_Server  $server  Server instance.
-	 * @param  WP_REST_Request $request Request used to generate the response.
+	 * @param mixed            $result  Response to replace the requested version with. Can be anything a normal endpoint can return, or null to not hijack the request.
+	 * @param \WP_REST_Server  $server  Server instance.
+	 * @param \WP_REST_Request $request Request used to generate the response.
 	 *
 	 * @return null                     Null to not hijack the filter.
 	 */
@@ -63,11 +63,11 @@ class REST_Requests extends Base {
 	/**
 	 * Calculate timers and finish debugging.
 	 *
-	 * @param  WP_HTTP_Response $result  Result to send to the client. Usually a WP_REST_Response.
-	 * @param  WP_REST_Server   $server  Server instance.
-	 * @param  WP_REST_Request  $request Request used to generate the response.
+	 * @param \WP_HTTP_Response $result  Result to send to the client. Usually a WP_REST_Response.
+	 * @param \WP_REST_Server   $server  Server instance.
+	 * @param \WP_REST_Request  $request Request used to generate the response.
 	 *
-	 * @return WP_HTTP_Response          Unchanged $result.
+	 * @return \WP_HTTP_Response          Unchanged $result.
 	 */
 	public function rest_post_dispatch( \WP_HTTP_Response $result, \WP_REST_Server $server, \WP_REST_Request $request ): \WP_HTTP_Response {
 		global $swpd_timers_rest;

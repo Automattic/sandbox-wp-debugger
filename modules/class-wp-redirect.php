@@ -8,7 +8,7 @@ namespace SWPD;
 /**
  * SWPD\WP_Redirect Class.
  */
-class WP_Redirect extends Base {
+class WP_Redirect extends Base { // phpcs:ignore VIPServices.Namespaces.GlobalNamespace.GlobalNamespace, Generic.Classes.OpeningBraceSameLine.ContentAfterBrace
 	/**
 	 * Name of the SWPD Debugger running.
 	 *
@@ -113,7 +113,7 @@ class WP_Redirect extends Base {
 	 *
 	 * @return mixed                The request path.
 	 */
-	public function collect_legacy_redirector_data( $request_path ) {
+	public function collect_legacy_redirector_data( string $request_path ): mixed {
 		if ( $request_path ) {
 			$redirect_uri = WPCOM_Legacy_Redirector::get_redirect_uri( $request_path );
 			if ( $redirect_uri ) {
@@ -132,7 +132,7 @@ class WP_Redirect extends Base {
 	 *
 	 * @return string      The redirection URL.
 	 */
-	private function legacy_redirector_normalise_url( $url ) {
+	private function legacy_redirector_normalise_url( string $url ): string {
 		$redirector_reflection = new ReflectionClass( 'WPCOM_Legacy_Redirector' );
 		$method                = $redirector_reflection->getMethod( 'normalise_url' );
 		$method->setAccessible( true );
@@ -203,12 +203,11 @@ class WP_Redirect extends Base {
 		// Start the backtrace from the wp_redirect / wp_safe_redirect call for easy parsing.
 		$slice = 3;
 		if ( 'wp_safe_redirect' === $used_redirection_function ) {
-			$slice++;
+			++$slice;
 		}
 		$backtrace = array_slice( swpd_debug_backtrace( true ), $slice );
 		swpd_log( $used_redirection_function, $message, $variables, $debug_data, str_replace( ', apply_filters(\'wp_redirect_status\'), WP_Hook->apply_filters, SWPD_WP_Redirect->report', '', implode( ' ', $backtrace ) ) );
 
 		return $status;
 	}
-
 }
