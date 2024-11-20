@@ -30,8 +30,9 @@ class Slow_Queries extends Base {
 	 */
 	public function __construct( array $args = array() ) {
 		$defaults = array(
-			'debug' => false,
-			'limit' => -1,
+			'debug'   => false,
+			'slow_ms' => false,
+			'limit'   => -1,
 		);
 
 		$this->args = wp_parse_args( $args, $defaults );
@@ -182,6 +183,14 @@ class Slow_Queries extends Base {
 					$debug = PHP_EOL . wp_strip_all_tags( "$connected $debug #{$counter} (" . number_format( sprintf( '%0.1f', $elapsed * 1000 ), 1, '.', ',' ) . 'ms @ ' . sprintf( '%0.2f', 1000 * ( $ts - $timestart ) ) . 'ms)' );
 				} else {
 					$debug = '';
+				}
+
+				// Only show slow queries they take longer than the slow_ms value.
+				if ( false !== $this->args['slow_ms'] ) {
+					$elapsed_ms = $elapsed * 1000;
+					if ( $elapsed_ms < $this->args['slow_ms'] ) {
+						continue;
+					}
 				}
 
 				$out .= $this->highlight_sql( $query ) . $debug . PHP_EOL . PHP_EOL;
