@@ -18,21 +18,30 @@ class Memcache extends Base {
 	public string $debugger_name = 'Memcache Object Cache';
 
 	/**
-	 * Specifies whether to include details in the debug output.
+	 * Specifies whether to include group details in the debug output.
 	 *
-	 * @var bool $details
+	 * @var bool $group_details
 	 */
-	public static bool $details = false;
+	public static bool $group_details = false;
+
+	/**
+	 * Specifies whether to include method details in the debug output.
+	 *
+	 * @var bool $method_details
+	 */
+	public static bool $method_details = false;
 
 	/**
 	 * Class constructor; set up all of the necessary WordPress hooks.
 	 *
-	 * @param bool $details Optional. Whether to include details in the debug output. Default false.
+	 * @param bool $group_details  Optional. Whether to include group details in the debug output. Default false.
+	 * @param bool $method_details Optional. Whether to include method details in the debug output. Default true.
 	 */
-	public function __construct( bool $details = false ) {
+	public function __construct( bool $group_details = false, bool $method_details = true ) {
 		add_action( 'shutdown', array( $this, 'memcache_debug' ), PHP_INT_MAX );
 
-		self::$details = $details;
+		self::$group_details  = $group_details;
+		self::$method_details = $method_details;
 	}
 
 	/**
@@ -45,14 +54,14 @@ class Memcache extends Base {
 	public function memcache_debug(): void {
 		global $wp_object_cache;
 
-		$total_memcache_time = 'Total query time: ' . number_format_i18n( sprintf( '%0.1f', $wp_object_cache->time_total * 1000 ), 1 ) . ' ms';
-		$total_memcache_size = 'Total size: ' . size_format( $wp_object_cache->size_total, 2 );
-		$group_detail_output = '';
+		$total_memcache_time  = 'Total query time: ' . number_format_i18n( sprintf( '%0.1f', $wp_object_cache->time_total * 1000 ), 1 ) . ' ms';
+		$total_memcache_size  = 'Total size: ' . size_format( $wp_object_cache->size_total, 2 );
+		$method_detail_output = '';
+		$group_detail_output  = '';
 
 		$memcache_stats = array();
 
 		// BEGIN Methods and Calls.
-
 		foreach ( $wp_object_cache->stats as $stat => $n ) {
 			if ( empty( $n ) ) {
 				continue;
@@ -62,8 +71,8 @@ class Memcache extends Base {
 		}
 
 		$data = array_map(
-			function ( $key, $value ) {
-				return array( $key, $value );
+			function ( $method, $calls ) {
+				return array( $method, $calls );
 			},
 			array_keys( $wp_object_cache->stats ),
 			$wp_object_cache->stats
@@ -73,13 +82,12 @@ class Memcache extends Base {
 		$calls_table = $this->array_to_ascii_table( $data );
 
 		// BEGIN Groups.
-
 		$groups = array_keys( $wp_object_cache->group_ops );
 		usort( $groups, 'strnatcasecmp' );
 
 		$active_group = $groups[0];
-		// Always show `slow-ops` first.
-		if ( in_array( 'slow-ops', $groups ) ) {
+
+		if ( in_array( 'slow-ops', $groups ) ) { // Always show `slow-ops` first.
 			$slow_ops_key = array_search( 'slow-ops', $groups );
 			$slow_ops     = $groups[ $slow_ops_key ];
 			unset( $groups[ $slow_ops_key ] );
@@ -141,8 +149,7 @@ class Memcache extends Base {
 		$groups_table = $this->array_to_ascii_table( $groups_table );
 
 		// BEGIN Group Details.
-
-		if ( true === self::$details ) {
+		if ( true === self::$group_details ) {
 			foreach ( $groups as $group ) {
 				$group_name = $group;
 				if ( empty( $group_name ) ) {
@@ -169,8 +176,14 @@ class Memcache extends Base {
 			}
 		}
 
+		// BEGIN Method Details.
+		if ( true === self::$method_details ) {
+			$method_detail_output .= PHP_EOL . sprintf( "=== Details for Methods ===\n\n" );
+			$method_detail_output .= $this->output_memcached_method_tables( $wp_object_cache->group_ops );
+		}
+
 		$this->log(
-			message: 'Memcache Stats: ' . $total_memcache_time . ' | ' . $total_memcache_size . PHP_EOL . PHP_EOL . $calls_table . PHP_EOL . $groups_table . PHP_EOL . $group_detail_output,
+			message: 'Memcache Stats: ' . $total_memcache_time . ' | ' . $total_memcache_size . PHP_EOL . PHP_EOL . $calls_table . PHP_EOL . $groups_table . PHP_EOL . $method_detail_output . PHP_EOL . $group_detail_output,
 			backtrace: false
 		);
 	}
@@ -214,5 +227,63 @@ class Memcache extends Base {
 		}
 
 		return $line;
+	}
+
+	/**
+	 * Outputs Memcached method tables.
+	 *
+	 * This function processes the provided data to group and aggregate Memcached
+	 * operations by method and group name. It then generates and returns an ASCII
+	 * table representation of the aggregated data for each method.
+	 *
+	 * @param array $data The data to be processed. Should be $wp_object_cache->group_ops.
+	 *
+	 * @return string The ASCII table representation of the aggregated data for each method.
+	 */
+	public function output_memcached_method_tables( array $data ): string {
+		$return = '';
+		// Initialize an array to hold grouped data.
+		$grouped_data = array();
+
+		// Iterate through each data entry.
+		foreach ( $data as $group_name => $entries ) {
+			foreach ( $entries as $entry ) {
+				[$method, $key, $hits, $time, $size] = $entry;
+
+				// Initialize the group if not set.
+				if ( ! isset( $grouped_data[ $method ][ $group_name ] ) ) {
+					$grouped_data[ $method ][ $group_name ] = array(
+						'ops'  => 0,
+						'size' => 0,
+						'time' => 0,
+					);
+				}
+
+				// Aggregate data for each group.
+				$grouped_data[ $method ][ $group_name ]['ops']  += 1;
+				$grouped_data[ $method ][ $group_name ]['size'] += (int) $size;
+				$grouped_data[ $method ][ $group_name ]['time'] += (float) $time;
+			}
+		}
+
+		// Output tables for each method.
+		foreach ( $grouped_data as $method => $groups ) {
+			$rows = array();
+			// Header row.
+			$rows[] = array( 'Group Name', 'Ops', 'Size', 'Time' );
+
+			foreach ( $groups as $group_name => $metrics ) {
+				$ops    = $metrics['ops'];
+				$size   = size_format( $metrics['size'] ); // Use WordPress function to format size.
+				$time   = number_format_i18n( $metrics['time'], 1 ) . 'ms'; // Use WordPress function to format time.
+				$rows[] = array( $group_name, (string) $ops, $size, $time );
+			}
+
+			// Display the table for the current method.
+			$return .= "($method)\n";
+			$return .= $this->array_to_ascii_table( $rows ) . PHP_EOL . PHP_EOL;
+		}
+
+		return $return;
 	}
 }
