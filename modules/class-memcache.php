@@ -248,7 +248,7 @@ class Memcache extends Base {
 		// Iterate through each data entry.
 		foreach ( $data as $group_name => $entries ) {
 			foreach ( $entries as $entry ) {
-				[$method, $key, $hits, $time, $size] = $entry;
+				list( $method, $key, $hits, $time, $size ) = $entry;
 
 				// Initialize the group if not set.
 				if ( ! isset( $grouped_data[ $method ][ $group_name ] ) ) {
