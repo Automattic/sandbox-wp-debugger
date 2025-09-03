@@ -47,7 +47,7 @@ unset( $swpd_module ); // No longer needed.
 //new SWPD\Slow_Bulk_Update();
 //new SWPD\Slow_Hooks();
 //new SWPD\Slow_Post_Save();
-//new SWPD\Slow_Queries();
+//new SWPD\Slow_Queries( array( 'debug' => true ) );
 //new SWPD\ES_Queries();
 //new SWPD\WP_Redirect();
 //new SWPD\Slow_Templates();
