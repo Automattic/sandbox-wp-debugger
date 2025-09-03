@@ -23,9 +23,26 @@
         }
     },
     "scripts": {
-        "lint": "phpcs",
-        "lint:fix": "phpcbf",
-        "post-install-cmd": ["@php -r \"if (file_exists('bin/fix-phpcs-php84.sh')) { echo 'Note: Run bin/fix-phpcs-php84.sh to fix PHP 8.4 compatibility issues with PHPCS.\\n'; }\""],
-        "post-update-cmd": ["@php -r \"if (file_exists('bin/fix-phpcs-php84.sh')) { echo 'Note: Run bin/fix-phpcs-php84.sh to fix PHP 8.4 compatibility issues with PHPCS.\\n'; }\""]
+        "lint": [
+            "@lint:php",
+            "@lint:js"
+        ],
+        "lint:fix": [
+            "@lint:fix:php",
+            "@lint:fix:js"
+        ],
+        "lint:php": "phpcs",
+        "lint:fix:php": "phpcbf",
+        "lint:js": "npm run lint",
+        "lint:fix:js": "npm run lint:fix",
+        "install-js-deps": "npm install",
+        "post-install-cmd": [
+            "@php -r \"if (file_exists('bin/fix-phpcs-php84.sh')) { echo 'Note: Run bin/fix-phpcs-php84.sh to fix PHP 8.4 compatibility issues with PHPCS.\\n'; }\"",
+            "@install-js-deps"
+        ],
+        "post-update-cmd": [
+            "@php -r \"if (file_exists('bin/fix-phpcs-php84.sh')) { echo 'Note: Run bin/fix-phpcs-php84.sh to fix PHP 8.4 compatibility issues with PHPCS.\\n'; }\"",
+            "@install-js-deps"
+        ]
     }
 }

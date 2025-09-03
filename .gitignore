@@ -16,3 +16,4 @@ phpcs.xml
 
 # Composer (repo root only)
 /vendor/
+/node_modules

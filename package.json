@@ -1,0 +1,19 @@
+{
+  "name": "swpd-toggle",
+  "version": "1.0.0",
+  "description": "Interactive CLI to toggle Sandbox WP Debugger modules",
+  "main": "module-toggle.js",
+  "scripts": {
+    "start": "node module-toggle.js",
+    "list": "node module-toggle.js list",
+    "lint": "eslint *.js",
+    "lint:fix": "eslint *.js --fix"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-config-standard": "^17.0.0"
+  },
+  "keywords": ["wordpress", "debug", "cli", "tui"],
+  "author": "",
+  "license": "MIT"
+}
