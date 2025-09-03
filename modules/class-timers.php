@@ -411,9 +411,13 @@ class Timers extends Base {
 			}
 		}
 
+		// Get current URL.
+		$current_url = $this->get_current_url();
+
 		// Add summary information.
 		$summary = sprintf(
-			"Total Walltime: %s\nMemory: %s/%s (%s%%), I/O: %d/%d, Context Switches: %d, Page Faults: %d%s",
+			"URL: %s\nTotal Walltime: %s\nMemory: %s/%s (%s%%), I/O: %d/%d, Context Switches: %d, Page Faults: %d%s",
+			$current_url,
 			self::human_time( $total_walltime ),
 			size_format( $memory ),
 			size_format( $memory_limit ),
@@ -425,7 +429,7 @@ class Timers extends Base {
 			$autoloader_details
 		);
 
-		$message = $table . "\n" . $summary;
+		$message = "\n" . $table . "\n" . $summary;
 
 		$this->log(
 			message: $message,
@@ -802,6 +806,34 @@ class Timers extends Base {
 		}
 
 		return 'custom';
+	}
+
+	/**
+	 * Gets the current URL from PHP superglobals.
+	 *
+	 * @return string The current URL or 'CLI' if running from command line.
+	 */
+	private function get_current_url(): string {
+		// Check if running from CLI.
+		if ( php_sapi_name() === 'cli' || ! isset( $_SERVER['HTTP_HOST'] ) ) {
+			return 'CLI';
+		}
+
+		// Determine protocol.
+		$protocol = 'http';
+		if ( 
+			( ! empty( $_SERVER['HTTPS'] ) && 'off' !== $_SERVER['HTTPS'] ) ||
+			( ! empty( $_SERVER['SERVER_PORT'] ) && 443 === (int) $_SERVER['SERVER_PORT'] ) ||
+			( ! empty( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO'] )
+		) {
+			$protocol = 'https';
+		}
+
+		// Build URL.
+		$host = $_SERVER['HTTP_HOST'] ?? '';
+		$uri  = $_SERVER['REQUEST_URI'] ?? '';
+
+		return $protocol . '://' . $host . $uri;
 	}
 
 	/**
