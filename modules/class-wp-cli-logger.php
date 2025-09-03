@@ -21,7 +21,7 @@ if ( true === defined( 'WP_CLI' ) && \WP_CLI ) {
 		 */
 		public function error( mixed $message ): void {
 			$this->_line( $message, 'Error', '%R', STDERR );
-			$this->_line( var_export( error_get_last(), true ), 'Error', '%R', STDERR );
+			$this->_line( var_export( error_get_last(), true ), 'Error', '%R', STDERR ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 			$this->_line( wp_debug_backtrace_summary(), 'Backtrace', '%R', STDERR ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_wp_debug_backtrace_summary
 		}
 	}
