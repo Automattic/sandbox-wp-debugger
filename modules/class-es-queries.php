@@ -135,7 +135,9 @@ class ES_Queries extends Base {
 		$query_count = count( $mapped_queries );
 		for ( $i = 0; $i < $query_count; ++$i ) {
 			$query    = wp_json_encode( $mapped_queries[ $i ]['args']['body'] );
+			$time_ms  = round( ( $mapped_queries[ $i ]['time_finish'] - $mapped_queries[ $i ]['time_start'] ) * 1000, 2 );
 			$message .= sprintf( 'Query %d: %s', $i + 1, self::highlight_json( $query, false ) ) . PHP_EOL;
+			$message .= sprintf( 'Time %d: %s ms', $i + 1, $time_ms ) . PHP_EOL;
 			$message .= sprintf( 'Hits %d: %s', $i + 1, $mapped_queries[ $i ]['request']['body']->hits->total->value ?? 'UNKNOWN' ) . PHP_EOL;
 			$message .= sprintf( 'Backtrace %d: %s', $i + 1, self::highlight_backtrace( implode( ',', $mapped_queries[ $i ]['backtrace'] ) ) ) . PHP_EOL;
 		}
