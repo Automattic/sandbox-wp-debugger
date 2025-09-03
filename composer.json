@@ -1,12 +1,31 @@
 {
+    "name": "emrikol/sandbox-wp-debugger",
+    "description": "Advanced debugging tools for WordPress development environments including wp_redirect debugging, WP CLI error backtracking, filter/action hook analysis, and performance monitoring.",
+    "type": "wordpress-muplugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Derrick Tennant",
+            "email": "derrick@automattic.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0"
+    },
     "require-dev": {
         "automattic/vipwpcs": "^2.3",
         "dealerdirect/phpcodesniffer-composer-installer": "^0.7.2",
-         "phpcompatibility/phpcompatibility-wp": "^2"
+        "phpcompatibility/phpcompatibility-wp": "^2"
     },
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "post-install-cmd": ["@php -r \"if (file_exists('bin/fix-phpcs-php84.sh')) { echo 'Note: Run bin/fix-phpcs-php84.sh to fix PHP 8.4 compatibility issues with PHPCS.\\n'; }\""],
+        "post-update-cmd": ["@php -r \"if (file_exists('bin/fix-phpcs-php84.sh')) { echo 'Note: Run bin/fix-phpcs-php84.sh to fix PHP 8.4 compatibility issues with PHPCS.\\n'; }\""]
     }
 }

@@ -55,6 +55,7 @@
 		<properties>
 			<property name="prefixes" type="array">
 				<element value="SWPD"/> <!-- Change this value to your theme or plugin prefix. -->
+				<element value="vip_"/> <!-- Change this value to your theme or plugin prefix. -->
 			</property>
 		</properties>
 	</rule>
