@@ -684,8 +684,8 @@ class Timers extends Base {
 
 		foreach ( $es_queries as $query ) {
 			if ( isset( $query['time_start'], $query['time_finish'] ) ) {
-				$elapsed_time           = $query['time_finish'] - $query['time_start'];
-				$this->total_es_time   += $elapsed_time;
+				$elapsed_time         = $query['time_finish'] - $query['time_start'];
+				$this->total_es_time += $elapsed_time;
 				++$this->es_request_count;
 			}
 		}
@@ -915,8 +915,7 @@ class Timers extends Base {
 
 		// Determine protocol.
 		$protocol = 'http';
-		if ( 
-			( ! empty( $_SERVER['HTTPS'] ) && 'off' !== $_SERVER['HTTPS'] ) ||
+		if ( ( ! empty( $_SERVER['HTTPS'] ) && 'off' !== $_SERVER['HTTPS'] ) ||
 			( ! empty( $_SERVER['SERVER_PORT'] ) && 443 === (int) $_SERVER['SERVER_PORT'] ) ||
 			( ! empty( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO'] )
 		) {
@@ -953,7 +952,7 @@ class Timers extends Base {
 			'/client-repo/vip-config/vip-config.php',
 		);
 
-		$wp_config_path = null;
+		$wp_config_path  = null;
 		$attempted_paths = array();
 
 		foreach ( $config_candidates as $candidate_path ) {
@@ -970,7 +969,7 @@ class Timers extends Base {
 
 		if ( null === $wp_config_path ) {
 			$bash_oneliner = "sed -i '/<?php/a\\\\n// Auto-installed by Sandbox WP Debugger Timers class for precise performance tracking\\nif ( file_exists( WP_CONTENT_DIR . '\"'\"'/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"' ) ) {\\n\\trequire_once WP_CONTENT_DIR . '\"'\"'/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"';\\n}' /var/www/wp-config.php";
-			
+
 			$this->log(
 				message: 'Cannot install early bootstrap timer: no writable config file found. Attempted paths: ' . implode( ', ', $attempted_paths ) . "\n\nTo install manually, run this bash command:\n" . $bash_oneliner,
 				backtrace: false
@@ -1033,9 +1032,9 @@ class Timers extends Base {
 		}
 
 		// Build the code to insert (adjust path based on config file location).
-		$is_vip_config = strpos( $wp_config_path, 'vip-config.php' ) !== false;
+		$is_vip_config    = strpos( $wp_config_path, 'vip-config.php' ) !== false;
 		$early_timer_code = "\n// Auto-installed by Sandbox WP Debugger Timers class for precise performance tracking\n";
-		
+
 		if ( $is_vip_config ) {
 			// For vip-config.php, use absolute path since WP_CONTENT_DIR may not be defined yet.
 			$early_timer_code .= "if ( file_exists( '/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php' ) ) {\n";

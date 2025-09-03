@@ -38,7 +38,7 @@ if ( function_exists( 'getrusage' ) ) {
 // global stream notifications in wp-config.php context.
 
 // Initialize autoloading performance tracking data
-$GLOBALS['swpd_autoload_data'] = array(
+$GLOBALS['swpd_autoload_data']       = array(
 	'total_time'             => 0,
 	'call_count'             => 0,
 	'success_count'          => 0,
