@@ -53,6 +53,20 @@ class Timers extends Base {
 	private int $http_request_count = 0;
 
 	/**
+	 * Total ElasticSearch request time accumulated.
+	 *
+	 * @var float $total_es_time
+	 */
+	private float $total_es_time = 0;
+
+	/**
+	 * Total number of ElasticSearch requests made.
+	 *
+	 * @var int $es_request_count
+	 */
+	private int $es_request_count = 0;
+
+	/**
 	 * Filesystem operations data.
 	 *
 	 * @var array $filesystem_operations
@@ -68,10 +82,11 @@ class Timers extends Base {
 
 	/**
 	 * Whether to use stream notifications for HTTP tracking instead of WordPress hooks.
+	 * Set to false since global stream notifications can't be reliably set.
 	 *
 	 * @var bool $use_stream_for_http
 	 */
-	private bool $use_stream_for_http = true;
+	private bool $use_stream_for_http = false;
 
 	/**
 	 * Autoloading performance tracking data.
@@ -119,11 +134,20 @@ class Timers extends Base {
 	 * Constructor; set up all of the necessary WordPress hooks.
 	 */
 	public function __construct() {
-		// Capture constructor time for bootstrap calculation.
-		$this->constructor_time = microtime( true );
+		// Check if early bootstrap timing data is available.
+		if ( isset( $GLOBALS['swpd_early_constructor_time'] ) ) {
+			$this->constructor_time = $GLOBALS['swpd_early_constructor_time'];
+		} else {
+			// Fallback: capture constructor time for bootstrap calculation.
+			$this->constructor_time = microtime( true );
+		}
 
-		// Collect baseline resource usage data as early as possible.
-		if ( function_exists( 'getrusage' ) ) {
+		// Check if early baseline resource usage data is available.
+		if ( isset( $GLOBALS['swpd_baseline_rusage'] ) && function_exists( 'getrusage' ) ) {
+			$this->baseline_rusage       = $GLOBALS['swpd_baseline_rusage'];
+			$this->baseline_child_rusage = $GLOBALS['swpd_baseline_child_rusage'];
+		} elseif ( function_exists( 'getrusage' ) ) {
+			// Fallback: collect baseline resource usage data as early as possible.
 			$this->baseline_rusage       = getrusage();
 			$this->baseline_child_rusage = getrusage( 1 ); // RUSAGE_CHILDREN.
 		}
@@ -137,11 +161,23 @@ class Timers extends Base {
 			add_filter( 'http_response', array( $this, 'end_http_timing' ), 9999, 3 );
 		}
 
-		// Set up global stream notification callback for filesystem operations.
-		$this->setup_stream_notification_callback();
+		// HTTP request tracking is handled entirely by this class since
+		// WordPress functions aren't available in wp-config.php context.
 
-		// Set up autoloading tracking.
-		$this->setup_autoload_tracking();
+		// Note: Filesystem/stream operations tracking is disabled since global
+		// stream notifications cannot be reliably set up.
+
+		// Check if early autoloading tracking data is available.
+		if ( isset( $GLOBALS['swpd_autoload_data'] ) ) {
+			$this->autoload_data       = $GLOBALS['swpd_autoload_data'];
+			$this->autoload_start_time = $GLOBALS['swpd_autoload_start_time'];
+		} else {
+			// Fallback: set up autoloading tracking.
+			$this->setup_autoload_tracking();
+		}
+
+		// Auto-install early bootstrap timer on first run.
+		$this->maybe_install_early_bootstrap_timer();
 	}
 
 	/**
@@ -256,6 +292,9 @@ class Timers extends Base {
 			$child_cpu_time = max( 0.0, $child_cpu_time ); // Ensure non-negative.
 		}
 
+		// Collect ElasticSearch timing data.
+		$this->collect_elasticsearch_timing();
+
 		// Calculate total walltime and bootstrap time.
 		$total_walltime = $late_timer;
 		$bootstrap_time = 0;
@@ -312,7 +351,7 @@ class Timers extends Base {
 		$autoload_count = $this->autoload_data['success_count'];
 
 		// Calculate other/unaccounted time.
-		$accounted_time = $database_time + $http_time + $bootstrap_time +
+		$accounted_time = $database_time + $http_time + $this->total_es_time + $bootstrap_time +
 							$cpu_user_time + $object_cache_time + $cpu_sys_time + $child_cpu_time + $shutdown_time +
 							$stream_times['filesystem'] + $stream_times['php_stream'] + $stream_times['data_stream'] +
 							$stream_times['other'] + $autoload_time;
@@ -327,6 +366,9 @@ class Timers extends Base {
 		}
 		if ( $http_time > 0 ) {
 			$timing_data[] = array( 'HTTP Requests (' . $http_count . ')', self::human_time( $http_time ), $http_time );
+		}
+		if ( $this->total_es_time > 0 ) {
+			$timing_data[] = array( 'ElasticSearch (' . $this->es_request_count . ')', self::human_time( $this->total_es_time ), $this->total_es_time );
 		}
 		if ( $bootstrap_time > 0 ) {
 			$timing_data[] = array( 'Bootstrap/Early', self::human_time( $bootstrap_time ), $bootstrap_time );
@@ -414,10 +456,14 @@ class Timers extends Base {
 		// Get current URL.
 		$current_url = $this->get_current_url();
 
+		// Check if we're using early bootstrap timing data.
+		$timing_precision = isset( $GLOBALS['swpd_early_constructor_time'] ) ? ' [Early Bootstrap Timing]' : '';
+
 		// Add summary information.
 		$summary = sprintf(
-			"URL: %s\nTotal Walltime: %s\nMemory: %s/%s (%s%%), I/O: %d/%d, Context Switches: %d, Page Faults: %d%s",
+			"URL: %s%s\nTotal Walltime: %s\nMemory: %s/%s (%s%%), I/O: %d/%d, Context Switches: %d, Page Faults: %d%s",
 			$current_url,
+			$timing_precision,
 			self::human_time( $total_walltime ),
 			size_format( $memory ),
 			size_format( $memory_limit ),
@@ -452,6 +498,11 @@ class Timers extends Base {
 			return $pre;
 		}
 
+		// Skip ElasticSearch requests - they're tracked separately.
+		if ( $this->is_elasticsearch_request( $url ) ) {
+			return $pre;
+		}
+
 		// Only start timing if another filter hasn't short-circuited the request.
 		if ( false === $pre ) {
 			$this->http_start_time = microtime( true );
@@ -472,6 +523,11 @@ class Timers extends Base {
 	public function end_http_timing( $response, array $args, string $url ) {
 		// Skip async requests.
 		if ( ! empty( $args['blocking'] ) && false === $args['blocking'] ) {
+			return $response;
+		}
+
+		// Skip ElasticSearch requests - they're tracked separately.
+		if ( $this->is_elasticsearch_request( $url ) ) {
 			return $response;
 		}
 
@@ -500,12 +556,9 @@ class Timers extends Base {
 			)
 		);
 
-		// Set as the default stream context.
-		stream_context_set_default(
-			array(
-				'notification' => array( $this, 'stream_notification_callback' ),
-			)
-		);
+		// Note: stream_context_set_default cannot set notification callbacks.
+		// Stream notifications need to be set on individual contexts.
+		// For now, we'll disable global stream monitoring in fallback mode.
 	}
 
 	/**
@@ -595,6 +648,47 @@ class Timers extends Base {
 	 */
 	private function is_http_operation( string $message ): bool {
 		return strpos( $message, 'http://' ) === 0 || strpos( $message, 'https://' ) === 0;
+	}
+
+	/**
+	 * Determines if an HTTP request URL is an ElasticSearch request.
+	 *
+	 * @param string $url The request URL.
+	 *
+	 * @return bool True if ElasticSearch request.
+	 */
+	private function is_elasticsearch_request( string $url ): bool {
+		// Check for VIP ElasticSearch URLs: https://es-*.vipv2.net:*/vip-*/_search
+		return (bool) preg_match( '/^https:\/\/es-.*\.vipv2\.net:\d+\/vip-.*\/_search/', $url );
+	}
+
+	/**
+	 * Collects ElasticSearch timing data from the query log.
+	 *
+	 * @return void
+	 */
+	private function collect_elasticsearch_timing(): void {
+		// Only collect if ElasticPress is available.
+		if ( ! function_exists( 'ep_get_query_log' ) ) {
+			return;
+		}
+
+		$es_queries = array_values(
+			array_filter(
+				ep_get_query_log(),
+				function ( $query ) {
+					return false !== stripos( $query['url'], '_search' );
+				}
+			)
+		);
+
+		foreach ( $es_queries as $query ) {
+			if ( isset( $query['time_start'], $query['time_finish'] ) ) {
+				$elapsed_time           = $query['time_finish'] - $query['time_start'];
+				$this->total_es_time   += $elapsed_time;
+				++$this->es_request_count;
+			}
+		}
 	}
 
 	/**
@@ -834,6 +928,145 @@ class Timers extends Base {
 		$uri  = $_SERVER['REQUEST_URI'] ?? '';
 
 		return $protocol . '://' . $host . $uri;
+	}
+
+	/**
+	 * Automatically installs the early bootstrap timer to wp-config.php on first run.
+	 *
+	 * @return void
+	 */
+	private function maybe_install_early_bootstrap_timer(): void {
+		// Skip if already using early bootstrap timing.
+		if ( isset( $GLOBALS['swpd_early_constructor_time'] ) ) {
+			$this->log(
+				message: 'Early bootstrap timer already active - skipping installation',
+				backtrace: false
+			);
+			return;
+		}
+
+		// Find a writable wp-config.php file, checking VIP Go sandbox locations.
+		$config_candidates = array(
+			ABSPATH . 'wp-config.php',
+			'/chroot/wp-config.php',
+			'/chroot' . ABSPATH . 'wp-config.php',
+			'/client-repo/vip-config/vip-config.php',
+		);
+
+		$wp_config_path = null;
+		$attempted_paths = array();
+
+		foreach ( $config_candidates as $candidate_path ) {
+			$attempted_paths[] = $candidate_path;
+			if ( file_exists( $candidate_path ) && is_writable( $candidate_path ) ) {
+				$wp_config_path = $candidate_path;
+				$this->log(
+					message: 'Found writable config file at: ' . $wp_config_path,
+					backtrace: false
+				);
+				break;
+			}
+		}
+
+		if ( null === $wp_config_path ) {
+			$bash_oneliner = "sed -i '/<?php/a\\\\n// Auto-installed by Sandbox WP Debugger Timers class for precise performance tracking\\nif ( file_exists( WP_CONTENT_DIR . '\"'\"'/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"' ) ) {\\n\\trequire_once WP_CONTENT_DIR . '\"'\"'/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"';\\n}' /var/www/wp-config.php";
+			
+			$this->log(
+				message: 'Cannot install early bootstrap timer: no writable config file found. Attempted paths: ' . implode( ', ', $attempted_paths ) . "\n\nTo install manually, run this bash command:\n" . $bash_oneliner,
+				backtrace: false
+			);
+			return;
+		}
+
+		// Read current wp-config.php content.
+		$wp_config_content = file_get_contents( $wp_config_path );
+		if ( false === $wp_config_content ) {
+			$this->log(
+				message: 'Cannot install early bootstrap timer: failed to read wp-config.php',
+				backtrace: false
+			);
+			return;
+		}
+
+		// Check if early bootstrap timer is already installed.
+		if ( strpos( $wp_config_content, 'early-bootstrap-timer.php' ) !== false ) {
+			$this->log(
+				message: 'Early bootstrap timer already installed in wp-config.php - skipping',
+				backtrace: false
+			);
+			return;
+		}
+
+		// Find the right place to insert the early bootstrap timer.
+		// Look for the end of the database configuration section.
+		$patterns_to_find = array(
+			'/\/\*\*#@-\*\//i',  // End of salts section.
+			'/\$table_prefix\s*=/i',  // Table prefix line.
+			'/(define\s*\(\s*["\']WP_DEBUG["\']|\$wp_debug)/i',  // WP_DEBUG definition.
+		);
+
+		$insert_position = false;
+		foreach ( $patterns_to_find as $pattern ) {
+			if ( preg_match( $pattern, $wp_config_content, $matches, PREG_OFFSET_CAPTURE ) ) {
+				// Find the end of the line.
+				$line_end        = strpos( $wp_config_content, "\n", $matches[0][1] );
+				$insert_position = false !== $line_end ? $line_end + 1 : $matches[0][1] + strlen( $matches[0][0] );
+				break;
+			}
+		}
+
+		// If no good position found, insert after opening PHP tag.
+		if ( false === $insert_position ) {
+			if ( preg_match( '/<\?php\s*/', $wp_config_content, $matches, PREG_OFFSET_CAPTURE ) ) {
+				$line_end        = strpos( $wp_config_content, "\n", $matches[0][1] );
+				$insert_position = false !== $line_end ? $line_end + 1 : $matches[0][1] + strlen( $matches[0][0] );
+			}
+		}
+
+		// Still no position? Give up.
+		if ( false === $insert_position ) {
+			$this->log(
+				message: 'Cannot install early bootstrap timer: could not find suitable insertion point in wp-config.php',
+				backtrace: false
+			);
+			return;
+		}
+
+		// Build the code to insert (adjust path based on config file location).
+		$is_vip_config = strpos( $wp_config_path, 'vip-config.php' ) !== false;
+		$early_timer_code = "\n// Auto-installed by Sandbox WP Debugger Timers class for precise performance tracking\n";
+		
+		if ( $is_vip_config ) {
+			// For vip-config.php, use absolute path since WP_CONTENT_DIR may not be defined yet.
+			$early_timer_code .= "if ( file_exists( '/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php' ) ) {\n";
+			$early_timer_code .= "\trequire_once '/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php';\n";
+		} else {
+			// For wp-config.php, use WP_CONTENT_DIR constant.
+			$early_timer_code .= "if ( file_exists( WP_CONTENT_DIR . '/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php' ) ) {\n";
+			$early_timer_code .= "\trequire_once WP_CONTENT_DIR . '/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php';\n";
+		}
+		$early_timer_code .= "}\n\n";
+
+		// Insert the code.
+		$new_content = substr_replace( $wp_config_content, $early_timer_code, $insert_position, 0 );
+
+		// Write the modified content back.
+		$bytes_written = file_put_contents( $wp_config_path, $new_content, LOCK_EX );
+		if ( false !== $bytes_written ) {
+			$this->log(
+				message: sprintf(
+					'Successfully auto-installed early bootstrap timer to %s (%d bytes written). Restart/refresh required to take effect.',
+					basename( $wp_config_path ),
+					$bytes_written
+				),
+				backtrace: false
+			);
+		} else {
+			$this->log(
+				message: 'Failed to write early bootstrap timer installation to ' . basename( $wp_config_path ) . ' - check file permissions',
+				backtrace: false
+			);
+		}
 	}
 
 	/**
