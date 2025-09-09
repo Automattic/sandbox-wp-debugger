@@ -968,7 +968,7 @@ class Timers extends Base {
 		}
 
 		if ( null === $wp_config_path ) {
-			$bash_oneliner = "sed -i '/<?php/a\\\\n// Auto-installed by Sandbox WP Debugger Timers class for precise performance tracking\\nif ( file_exists( WP_CONTENT_DIR . '\"'\"'/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"' ) ) {\\n\\trequire_once WP_CONTENT_DIR . '\"'\"'/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"';\\n}' /var/www/wp-config.php";
+			$bash_oneliner = "sed -i '/<?php/a\\\\n// Auto-installed by Sandbox WP Debugger Timers class for precise performance tracking\\nif ( file_exists(  '\"'\"'/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"' ) ) {\\n\\trequire_once  '\"'\"'/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php'\"'\"';\\n}' /var/www/wp-config.php";
 
 			$this->log(
 				message: 'Cannot install early bootstrap timer: no writable config file found. Attempted paths: ' . implode( ', ', $attempted_paths ) . "\n\nTo install manually, run this bash command:\n" . $bash_oneliner,
@@ -1041,8 +1041,8 @@ class Timers extends Base {
 			$early_timer_code .= "\trequire_once '/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php';\n";
 		} else {
 			// For wp-config.php, use WP_CONTENT_DIR constant.
-			$early_timer_code .= "if ( file_exists( WP_CONTENT_DIR . '/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php' ) ) {\n";
-			$early_timer_code .= "\trequire_once WP_CONTENT_DIR . '/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php';\n";
+			$early_timer_code .= "if ( file_exists( '/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php' ) ) {\n";
+			$early_timer_code .= "\trequire_once '/var/www/wp-content/mu-plugins/00-sandbox-helper/sandbox-wp-debugger/early-bootstrap-timer.php';\n";
 		}
 		$early_timer_code .= "}\n\n";
 
