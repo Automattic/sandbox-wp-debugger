@@ -11,6 +11,8 @@
  * - Memory usage
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -27,9 +29,9 @@ class Timers extends Base {
 	/**
 	 * Represents the early timer.
 	 *
-	 * @var mixed $early_timer
+	 * @var float $early_timer
 	 */
-	public $early_timer;
+	public float $early_timer = 0.0;
 
 	/**
 	 * Current HTTP request start time.
@@ -161,11 +163,15 @@ class Timers extends Base {
 			add_filter( 'http_response', array( $this, 'end_http_timing' ), 9999, 3 );
 		}
 
-		// HTTP request tracking is handled entirely by this class since
-		// WordPress functions aren't available in wp-config.php context.
+		/*
+		 * HTTP request tracking is handled entirely by this class since
+		 * WordPress functions aren't available in wp-config.php context.
+		 */
 
-		// Note: Filesystem/stream operations tracking is disabled since global
-		// stream notifications cannot be reliably set up.
+		/*
+		 * Note: Filesystem/stream operations tracking is disabled since global
+		 * stream notifications cannot be reliably set up.
+		 */
 
 		// Check if early autoloading tracking data is available.
 		if ( isset( $GLOBALS['swpd_autoload_data'] ) ) {
@@ -195,7 +201,7 @@ class Timers extends Base {
 	 * @return void
 	 */
 	public function late_shutdown(): void {
-		/**
+		/*
 		 * Docs:
 		 *
 		 * @see https://github.com/johnbillion/query-monitor/blob/4dbdd30f599a432e430be31e7501d5831417d2ae/collectors/overview.php#L62
@@ -486,13 +492,13 @@ class Timers extends Base {
 	/**
 	 * Starts timing an HTTP request.
 	 *
-	 * @param mixed  $pre  Pre-filtered value. Null if request should proceed.
-	 * @param array  $args Request arguments.
-	 * @param string $url  Request URL.
+	 * @param false|array|\WP_Error $pre  Pre-filtered value. False if the request should proceed.
+	 * @param array                 $args Request arguments.
+	 * @param string                $url  Request URL.
 	 *
-	 * @return mixed The pre-filtered value unchanged.
+	 * @return false|array|\WP_Error The pre-filtered value unchanged.
 	 */
-	public function start_http_timing( $pre, array $args, string $url ) {
+	public function start_http_timing( false|array|\WP_Error $pre, array $args, string $url ): false|array|\WP_Error {
 		// Skip async requests since they don't affect walltime.
 		if ( ! empty( $args['blocking'] ) && false === $args['blocking'] ) {
 			return $pre;
@@ -514,13 +520,13 @@ class Timers extends Base {
 	/**
 	 * Ends timing an HTTP request and accumulates the elapsed time.
 	 *
-	 * @param array|WP_Error $response HTTP response or WP_Error object.
-	 * @param array          $args     Request arguments.
-	 * @param string         $url      Request URL.
+	 * @param array|\WP_Error $response HTTP response or WP_Error object.
+	 * @param array           $args     Request arguments.
+	 * @param string          $url      Request URL.
 	 *
-	 * @return array|WP_Error The response unchanged.
+	 * @return array|\WP_Error The response unchanged.
 	 */
-	public function end_http_timing( $response, array $args, string $url ) {
+	public function end_http_timing( array|\WP_Error $response, array $args, string $url ): array|\WP_Error {
 		// Skip async requests.
 		if ( ! empty( $args['blocking'] ) && false === $args['blocking'] ) {
 			return $response;
@@ -556,9 +562,11 @@ class Timers extends Base {
 			)
 		);
 
-		// Note: stream_context_set_default cannot set notification callbacks.
-		// Stream notifications need to be set on individual contexts.
-		// For now, we'll disable global stream monitoring in fallback mode.
+		/*
+		 * Note: stream_context_set_default cannot set notification callbacks.
+		 * Stream notifications need to be set on individual contexts.
+		 * For now, we'll disable global stream monitoring in fallback mode.
+		 */
 	}
 
 	/**
@@ -658,7 +666,7 @@ class Timers extends Base {
 	 * @return bool True if ElasticSearch request.
 	 */
 	private function is_elasticsearch_request( string $url ): bool {
-		// Check for VIP ElasticSearch URLs: https://es-*.vipv2.net:*/vip-*/_search
+		// Check for VIP ElasticSearch URLs: https://es-*.vipv2.net:*/vip-*/_search.
 		return (bool) preg_match( '/^https:\/\/es-.*\.vipv2\.net:\d+\/vip-.*\/_search/', $url );
 	}
 
@@ -783,12 +791,12 @@ class Timers extends Base {
 						$this->track_successful_autoload( $class_name, $autoloader );
 						break;
 					}
-				} catch ( Exception $e ) {
+				} catch ( \Exception $e ) {
 					// Re-register our wrapper even on exception.
 					spl_autoload_register( array( $this, 'timed_autoload_wrapper' ), true, true );
 					// Continue to try other autoloaders.
 					continue;
-				} catch ( Error $e ) {
+				} catch ( \Error $e ) {
 					// Handle PHP 7+ Error objects as well.
 					spl_autoload_register( array( $this, 'timed_autoload_wrapper' ), true, true );
 					continue;
@@ -807,12 +815,12 @@ class Timers extends Base {
 	/**
 	 * Tracks successful autoload operations.
 	 *
-	 * @param string $class_name The successfully loaded class name.
-	 * @param mixed  $autoloader The autoloader that succeeded.
+	 * @param string   $class_name The successfully loaded class name.
+	 * @param callable $autoloader The autoloader that succeeded.
 	 *
 	 * @return void
 	 */
-	private function track_successful_autoload( string $class_name, $autoloader ): void {
+	private function track_successful_autoload( string $class_name, callable $autoloader ): void {
 		// Safety check for timing.
 		if ( null === $this->autoload_start_time ) {
 			return;
@@ -876,11 +884,11 @@ class Timers extends Base {
 	/**
 	 * Categorizes an autoloader by type.
 	 *
-	 * @param mixed $autoloader The autoloader callable.
+	 * @param callable $autoloader The autoloader callable.
 	 *
 	 * @return string Autoloader category.
 	 */
-	private function categorize_autoloader( $autoloader ): string {
+	private function categorize_autoloader( callable $autoloader ): string {
 		if ( is_array( $autoloader ) && isset( $autoloader[0] ) ) {
 			$class_name = is_object( $autoloader[0] ) ? get_class( $autoloader[0] ) : $autoloader[0];
 
@@ -923,8 +931,8 @@ class Timers extends Base {
 		}
 
 		// Build URL.
-		$host = $_SERVER['HTTP_HOST'] ?? '';
-		$uri  = $_SERVER['REQUEST_URI'] ?? '';
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+		$uri  = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 
 		return $protocol . '://' . $host . $uri;
 	}
@@ -957,7 +965,7 @@ class Timers extends Base {
 
 		foreach ( $config_candidates as $candidate_path ) {
 			$attempted_paths[] = $candidate_path;
-			if ( file_exists( $candidate_path ) && is_writable( $candidate_path ) ) {
+			if ( file_exists( $candidate_path ) && is_writable( $candidate_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_is_writable -- This sandbox debugger explicitly installs into a known config file.
 				$wp_config_path = $candidate_path;
 				$this->log(
 					message: 'Found writable config file at: ' . $wp_config_path,
@@ -978,7 +986,7 @@ class Timers extends Base {
 		}
 
 		// Read current wp-config.php content.
-		$wp_config_content = file_get_contents( $wp_config_path );
+		$wp_config_content = file_get_contents( $wp_config_path ); // phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown -- This is a validated local config path.
 		if ( false === $wp_config_content ) {
 			$this->log(
 				message: 'Cannot install early bootstrap timer: failed to read wp-config.php',
@@ -996,8 +1004,10 @@ class Timers extends Base {
 			return;
 		}
 
-		// Find the right place to insert the early bootstrap timer.
-		// Look for the end of the database configuration section.
+		/*
+		 * Find the right place to insert the early bootstrap timer.
+		 * Look for the end of the database configuration section.
+		 */
 		$patterns_to_find = array(
 			'/\/\*\*#@-\*\//i',  // End of salts section.
 			'/\$table_prefix\s*=/i',  // Table prefix line.
@@ -1050,7 +1060,7 @@ class Timers extends Base {
 		$new_content = substr_replace( $wp_config_content, $early_timer_code, $insert_position, 0 );
 
 		// Write the modified content back.
-		$bytes_written = file_put_contents( $wp_config_path, $new_content, LOCK_EX );
+		$bytes_written = file_put_contents( $wp_config_path, $new_content, LOCK_EX ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_file_put_contents -- This sandbox debugger explicitly installs into a known config file.
 		if ( false !== $bytes_written ) {
 			$this->log(
 				message: sprintf(

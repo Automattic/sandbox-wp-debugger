@@ -33,6 +33,11 @@
 		https://github.com/Automattic/VIP-Coding-Standards -->
 	<rule ref="WordPress-VIP-Go"/>
 
+	<!-- This debugging endpoint intentionally replaces the REST response with an HTML page. -->
+	<rule ref="WordPressVIPMinimum.Hooks.AlwaysReturnInFilter.MissingReturnStatement">
+		<exclude-pattern>./modules/class-debugbar-rest-api.php</exclude-pattern>
+	</rule>
+
 	<!-- Rules: WordPress Coding Standards - see
 		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
 	<rule ref="WordPress-Extra"/> <!-- Includes WordPress-Core -->

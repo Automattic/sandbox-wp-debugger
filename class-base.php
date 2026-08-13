@@ -3,6 +3,8 @@
  * Sandbox WP Debugger Helper Base Class
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -12,16 +14,16 @@ class Base {
 	/**
 	 * Class instance.
 	 *
-	 * @var object
+	 * @var self|null
 	 */
-	private static $instance;
+	private static ?self $instance = null;
 
 	/**
 	 * Initiate an instance of the class if it doesn't exist
 	 *
-	 * @return object
+	 * @return self
 	 */
-	public static function init(): object {
+	public static function init(): self {
 		if ( ! self::$instance ) {
 			self::$instance = new self();
 		}
@@ -32,10 +34,10 @@ class Base {
 	/**
 	 * Logs data to the error log via swpd_log().
 	 *
-	 * @param  string       $message    The message being sent.
-	 * @param  array        $data       An associative array of data to output.
-	 * @param  array        $debug_data An associative array of extra data to output.
-	 * @param  bool|boolean $backtrace  Output a backtrace, default to false.
+	 * @param  string $message    The message being sent.
+	 * @param  array  $data       An associative array of data to output.
+	 * @param  array  $debug_data An associative array of extra data to output.
+	 * @param  bool   $backtrace  Output a backtrace, default to false.
 	 *
 	 * @return void
 	 */

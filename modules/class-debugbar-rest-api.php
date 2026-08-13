@@ -3,9 +3,9 @@
  * Enable Debug Bar for REST API endpoints (add ?debug). Not for production.
  * e.g. http://local.wordpress.local/wp-json/wp/v2/media/?debug
  * Author: @trepmal
- *
- * phpcs:disable WordPressVIPMinimum.Hooks.AlwaysReturnInFilter.MissingReturnStatement
  */
+
+declare(strict_types=1);
 
 namespace SWPD;
 
@@ -39,7 +39,7 @@ class DebugBar_REST_API extends Base {
 			return;
 		}
 
-		/**
+		/*
 		 * Probably a bad shortcut, helps with authentication-required endpoints
 		 * as well as Debug Bar Console.
 		 */
@@ -50,12 +50,7 @@ class DebugBar_REST_API extends Base {
 		foreach ( array( 'style_loader_src', 'script_loader_src' ) as $hook ) {
 			add_filter(
 				$hook,
-				function ( $src, $handle ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-					if ( false !== strpos( $src, '/themes/' ) ) {
-						return false;
-					}
-					return $src;
-				},
+				array( $this, 'filter_asset_source' ),
 				10,
 				2
 			);
@@ -65,15 +60,31 @@ class DebugBar_REST_API extends Base {
 	}
 
 	/**
+	 * Prevent theme assets from being included in the debug response.
+	 *
+	 * @param string|false $src    Asset URL.
+	 * @param string       $handle Asset handle.
+	 *
+	 * @return string|false The unchanged URL, or false for theme assets.
+	 */
+	public function filter_asset_source( string|false $src, string $handle ): string|false { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( false !== $src && false !== strpos( $src, '/themes/' ) ) {
+			return false;
+		}
+
+		return $src;
+	}
+
+	/**
 	 * Output JSON in HTML.
 	 *
 	 * @param array            $result         Response data to send to the client.
 	 * @param \WP_REST_Server  $wp_rest_server Server instance.
 	 * @param \WP_REST_Request $request        Request used to generate the response.
 	 *
-	 * @return mixed      Response data to send to the client.
+	 * @return array Response data to send to the client when debugging is disabled.
 	 */
-	public function rest_pre_echo_response( array $result, \WP_REST_Server $wp_rest_server, \WP_REST_Request $request ): mixed {
+	public function rest_pre_echo_response( array $result, \WP_REST_Server $wp_rest_server, \WP_REST_Request $request ): array {
 		if ( ! $this->is_rest_debug() ) {
 			return $result;
 		}

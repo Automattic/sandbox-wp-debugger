@@ -3,6 +3,8 @@
  * Apply Filters Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -15,28 +17,28 @@ class Apply_Filters extends Base {
 	 *
 	 * @var string
 	 */
-	private $filter_to_debug = null;
+	private string $filter_to_debug;
 
 	/**
 	 * Only show when filter values change, defaults to false.
 	 *
 	 * @var bool
 	 */
-	private $only_changed = false;
+	private bool $only_changed = false;
 
 	/**
 	 * The filter's previous value.
 	 *
-	 * @var string
+	 * @var mixed
 	 */
-	private $swpd_filter_prev_value = null;
+	private mixed $swpd_filter_prev_value = null;
 
 	/**
 	 * The time the filter started.
 	 *
-	 * @var string
+	 * @var float
 	 */
-	private $time_start = null;
+	private float $time_start;
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
@@ -101,14 +103,14 @@ class Apply_Filters extends Base {
 	/**
 	 * Calls our debugging callback added to the selected hook.
 	 *
-	 * @param mixed $value    The filtered value, if it is a filter.
-	 * @param mixed $idx      The index in the global $wp_filters we are in.
-	 * @param mixed $the_     I have no idea.
-	 * @param int   $priority The current hook priority.
+	 * @param mixed      $value    The filtered value, if it is a filter.
+	 * @param int|string $idx      The callback ID in the global $wp_filter registry.
+	 * @param array      $the_     The registered callback data.
+	 * @param int        $priority The current hook priority.
 	 *
 	 * @return mixed           The filtered value, if it is a filter.
 	 */
-	public function debug( mixed $value, mixed $idx, mixed $the_, int $priority ): mixed {
+	public function debug( mixed $value, int|string $idx, array $the_, int $priority ): mixed {
 		if ( false === $this->only_changed || $this->swpd_filter_prev_value !== $value ) {
 			$data = array(
 				'initial value' => $this->swpd_filter_prev_value,
@@ -141,13 +143,13 @@ class Apply_Filters extends Base {
 
 		// Handle function and closures.
 		if ( true === is_string( $the_['function'] ) || true === is_a( $the_['function'], '\Closure' ) ) {
-			$the_reflection = new ReflectionFunction( $the_['function'] );
+			$the_reflection = new \ReflectionFunction( $the_['function'] );
 			$return         = $the_reflection->getFileName() . ' L# ' . $the_reflection->getStartLine();
 		}
 
 		// Handle class' methods.
 		if ( true === is_array( $the_['function'] ) ) {
-			$the_reflection = new ReflectionMethod( $the_['function'][0], $the_['function'][1] );
+			$the_reflection = new \ReflectionMethod( $the_['function'][0], $the_['function'][1] );
 			$return         = $the_reflection->getFileName() . ' L# ' . $the_reflection->getStartLine();
 		}
 

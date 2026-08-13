@@ -3,6 +3,8 @@
  * Hook do_action Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -15,24 +17,24 @@ class Do_Action extends Base {
 	 *
 	 * @var string
 	 */
-	private $action_to_debug = null;
+	private string $action_to_debug;
 
 	/**
 	 * A custom callback to run after each already registered callback.
 	 *
-	 * @var mixed
+	 * @var \Closure
 	 */
-	private $callback = null;
+	private \Closure $callback;
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
 	 *
-	 * @param string $filter   The hook name to debug.
-	 * @param mixed  $callback A custom callback to run after each already registered callback.
+	 * @param string   $filter   The hook name to debug.
+	 * @param callable $callback A custom callback to run after each already registered callback.
 	 */
-	public function __construct( string $filter, mixed $callback ) {
+	public function __construct( string $filter, callable $callback ) {
 		$this->action_to_debug = $filter;
-		$this->callback        = $callback;
+		$this->callback        = \Closure::fromCallable( $callback );
 		add_filter( 'all', array( $this, 'filter_all' ), 10, 2 );
 	}
 
@@ -87,14 +89,14 @@ class Do_Action extends Base {
 	/**
 	 * Calls our debugging callback added to the selected hook.
 	 *
-	 * @param mixed $value    The filtered value, if it is a filter.
-	 * @param mixed $idx      The index in the global $wp_filters we are in.
-	 * @param mixed $the_     I have no idea.
-	 * @param int   $priority The current hook priority.
+	 * @param mixed      $value    The filtered value, if it is a filter.
+	 * @param int|string $idx      The callback ID in the global $wp_filter registry.
+	 * @param array      $the_     The registered callback data.
+	 * @param int        $priority The current hook priority.
 	 *
 	 * @return mixed           The filtered value, if it is a filter.
 	 */
-	public function debug( mixed $value, mixed $idx, mixed $the_, int $priority ): mixed {
+	public function debug( mixed $value, int|string $idx, array $the_, int $priority ): mixed {
 		( $this->callback )( $value, $idx, $the_, $priority );
 		return $value;
 	}

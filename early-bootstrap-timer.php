@@ -14,30 +14,34 @@
  * much earlier in the WordPress bootstrap process.
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) && ! defined( 'WP_INSTALLING' ) ) {
-	// Only run if we're in a WordPress context
+	// Only run if we're in a WordPress context.
 	return;
 }
 
-// Prevent multiple inclusions
+// Prevent multiple inclusions.
 if ( defined( 'SWPD_EARLY_BOOTSTRAP_LOADED' ) ) {
 	return;
 }
 define( 'SWPD_EARLY_BOOTSTRAP_LOADED', true );
 
-// Initialize global storage for early timing data
+// Initialize global storage for early timing data.
 $GLOBALS['swpd_early_constructor_time'] = microtime( true );
 
-// Collect baseline resource usage data as early as possible
+// Collect baseline resource usage data as early as possible.
 if ( function_exists( 'getrusage' ) ) {
 	$GLOBALS['swpd_baseline_rusage']       = getrusage();
-	$GLOBALS['swpd_baseline_child_rusage'] = getrusage( 1 ); // RUSAGE_CHILDREN
+	$GLOBALS['swpd_baseline_child_rusage'] = getrusage( 1 ); // RUSAGE_CHILDREN.
 }
 
-// Note: Filesystem/stream operations tracking is disabled since we can't set
-// global stream notifications in wp-config.php context.
+/*
+ * Note: Filesystem/stream operations tracking is disabled since we can't set
+ * global stream notifications in wp-config.php context.
+ */
 
-// Initialize autoloading performance tracking data
+// Initialize autoloading performance tracking data.
 $GLOBALS['swpd_autoload_data']       = array(
 	'total_time'             => 0,
 	'call_count'             => 0,
@@ -48,8 +52,10 @@ $GLOBALS['swpd_autoload_data']       = array(
 );
 $GLOBALS['swpd_autoload_start_time'] = null;
 
-// Stream-related functions removed since global stream notifications
-// cannot be set up in wp-config.php context.
+/**
+ * Stream-related functions removed since global stream notifications
+ * cannot be set up in wp-config.php context.
+ */
 
 /**
  * Autoloader wrapper that times all autoloading operations.
@@ -130,12 +136,12 @@ function swpd_early_timed_autoload_wrapper( string $class_name ): bool {
 /**
  * Tracks successful autoload operations.
  *
- * @param string $class_name The successfully loaded class name.
- * @param mixed  $autoloader The autoloader that succeeded.
+ * @param string   $class_name The successfully loaded class name.
+ * @param callable $autoloader The autoloader that succeeded.
  *
  * @return void
  */
-function swpd_early_track_successful_autoload( string $class_name, $autoloader ): void {
+function swpd_early_track_successful_autoload( string $class_name, callable $autoloader ): void {
 	// Safety check for timing.
 	if ( null === $GLOBALS['swpd_autoload_start_time'] ) {
 		return;
@@ -199,11 +205,11 @@ function swpd_early_track_failed_autoload( string $class_name ): void {
 /**
  * Categorizes an autoloader by type.
  *
- * @param mixed $autoloader The autoloader callable.
+ * @param callable $autoloader The autoloader callable.
  *
  * @return string Autoloader category.
  */
-function swpd_early_categorize_autoloader( $autoloader ): string {
+function swpd_early_categorize_autoloader( callable $autoloader ): string {
 	if ( is_array( $autoloader ) && isset( $autoloader[0] ) ) {
 		$class_name = is_object( $autoloader[0] ) ? get_class( $autoloader[0] ) : $autoloader[0];
 
@@ -225,9 +231,11 @@ function swpd_early_categorize_autoloader( $autoloader ): string {
 	return 'custom';
 }
 
-// Note: HTTP request timing can't be set up here since WordPress functions
-// like add_filter() are not available in wp-config.php context.
-// HTTP timing will be handled by the Timers class once WordPress loads.
+/*
+ * Note: HTTP request timing can't be set up here since WordPress functions
+ * like add_filter() are not available in wp-config.php context.
+ * HTTP timing will be handled by the Timers class once WordPress loads.
+ */
 
-// Set up autoloading tracking
+// Set up autoloading tracking.
 spl_autoload_register( 'swpd_early_timed_autoload_wrapper', true, true );

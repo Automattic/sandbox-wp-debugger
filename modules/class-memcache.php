@@ -3,6 +3,8 @@
  * Memcache Object Cache debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -191,12 +193,12 @@ class Memcache extends Base {
 	/**
 	 * Get the memcached Group Ops line.
 	 *
-	 * @param mixed $index Unknown. The Index of something.
-	 * @param array $arr   Unknown. The array of Group data.
+	 * @param int|string $index Unknown. The Index of something.
+	 * @param array      $arr   Unknown. The array of Group data.
 	 *
 	 * @return string      The Group Ops line.
 	 */
-	public function get_group_ops_line( mixed $index, array $arr ): string {
+	public function get_group_ops_line( int|string $index, array $arr ): string {
 		// operation.
 		$line = "{$arr[0]} ";
 

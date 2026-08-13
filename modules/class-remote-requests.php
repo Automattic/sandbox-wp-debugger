@@ -3,6 +3,8 @@
  * Sandbox WP Debugger Helper to output data about remote requests.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**

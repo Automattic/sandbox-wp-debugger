@@ -3,6 +3,8 @@
  * ES Queries Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -89,7 +91,7 @@ class ES_Queries extends Base {
 				$query['args']['body'] = json_decode( $query['args']['body'], true );
 				$query['args']['body'] = array_merge( array( 'profile' => false ), $query['args']['body'] );
 
-				/**
+				/*
 				 * We only want to show booleans (either true or false) or other values that would cast to boolean true (non-empty strings, arrays and non-0 ints),
 				 * Because the full list of core query arguments is > 60 elements long and it doesn't look good on the frontend.
 				 */

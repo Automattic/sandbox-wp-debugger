@@ -3,6 +3,8 @@
  * Slow Post Save Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -15,7 +17,7 @@ class Slow_Post_Save extends Base {
 	 *
 	 * @var string
 	 */
-	public $debugger_name = 'slow post save';
+	public string $debugger_name = 'slow post save';
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.

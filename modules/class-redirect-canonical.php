@@ -3,6 +3,8 @@
  * Redirect Canonical Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -52,8 +54,8 @@ class Redirect_Canonical extends Base {
 		);
 	}
 
-	// The following function is from core, so let's disable PHPCS.
-	// phpcs:disable
+	// The following function is copied from WordPress core, so preserve its upstream formatting.
+	// phpcs:disable WordPress,WordPressVIPMinimum,Emrikol,Squiz,Generic
 
 	/**
 	 * Custom redirect_canonical that adds debugging.

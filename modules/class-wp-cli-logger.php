@@ -3,6 +3,8 @@
  * WP-CLI Logger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 if ( true === defined( 'WP_CLI' ) && \WP_CLI ) {

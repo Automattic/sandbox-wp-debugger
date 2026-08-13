@@ -3,6 +3,8 @@
  * Slow Bulk Update Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -15,7 +17,7 @@ class Slow_Bulk_Update extends Base {
 	 *
 	 * @var string
 	 */
-	public $debugger_name = 'Slow Bulk Update';
+	public string $debugger_name = 'Slow Bulk Update';
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.

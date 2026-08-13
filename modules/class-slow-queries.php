@@ -3,6 +3,8 @@
  * Slow Queries Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**

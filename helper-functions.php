@@ -3,6 +3,8 @@
  * SWPD Helper Functions.
  */
 
+declare(strict_types=1);
+
 /**
  * Generates debug data for output or error logging.
  *
@@ -111,12 +113,12 @@ function swpd_apply_filter_debug( string $filter_to_debug, bool $only_changed = 
 /**
  * Registers a new action debugger.
  *
- * @param  string $action_to_debug The hook name to debug.
- * @param  mixed  $callback        A custom callback to run after each already registered callback.
+ * @param  string   $action_to_debug The hook name to debug.
+ * @param  callable $callback        A custom callback to run after each already registered callback.
  *
  * @return void
  */
-function swpd_do_action_debug( string $action_to_debug, mixed $callback ): void {
+function swpd_do_action_debug( string $action_to_debug, callable $callback ): void {
 	if ( class_exists( 'SWPD\Do_Action' ) ) {
 		new SWPD\Do_Action( $action_to_debug, $callback );
 	} else {

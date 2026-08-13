@@ -3,6 +3,8 @@
  * Sandbox WP Debugger Helper for REST Requests.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -31,7 +33,7 @@ class REST_Requests extends Base {
 	 * @param \WP_REST_Server  $server  Server instance.
 	 * @param \WP_REST_Request $request Request used to generate the response.
 	 *
-	 * @return null                     Null to not hijack the filter.
+	 * @return mixed                    Null to not hijack the filter.
 	 */
 	public function rest_pre_dispatch( mixed $result, \WP_REST_Server $server, \WP_REST_Request $request ): mixed {
 		global $swpd_timers_rest;

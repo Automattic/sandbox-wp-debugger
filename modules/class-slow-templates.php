@@ -3,6 +3,8 @@
  * Sandbox WP Debugger Helper to output the 10 slowest hooks.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**

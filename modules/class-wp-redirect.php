@@ -3,6 +3,8 @@
  * WP Redirect Debugger.
  */
 
+declare(strict_types=1);
+
 namespace SWPD;
 
 /**
@@ -21,49 +23,49 @@ class WP_Redirect extends Base { // phpcs:ignore VIPServices.Namespaces.GlobalNa
 	 *
 	 * @var int
 	 */
-	public $original_status = null;
+	public ?int $original_status = null;
 
 	/**
 	 * Original HTTP Location.
 	 *
 	 * @var string
 	 */
-	public $original_location = null;
+	public ?string $original_location = null;
 
 	/**
 	 * Whether or not the redirect is considered safe.
 	 *
 	 * @var boolean
 	 */
-	public $wp_safe_redirect = false;
+	public bool $wp_safe_redirect = false;
 
 	/**
 	 * Whitelisted hosts for safe redirects.
 	 *
 	 * @var array
 	 */
-	public $whitelisted_safe_redirect_hosts = array();
+	public array $whitelisted_safe_redirect_hosts = array();
 
 	/**
 	 * The hostname during a safe redirect.
 	 *
 	 * @var string
 	 */
-	public $safe_redirect_host = null;
+	public ?string $safe_redirect_host = null;
 
 	/**
 	 * Whether or not the redirect is a Legacy redirect.
 	 *
 	 * @var boolean
 	 */
-	public $is_legacy_redirect = false;
+	public bool $is_legacy_redirect = false;
 
 	/**
 	 * The Post ID of the data object during a Legacy redirect.
 	 *
 	 * @var int
 	 */
-	public $legacy_redirect_post_id = null;
+	public int|false|null $legacy_redirect_post_id = null;
 
 	/**
 	 * Constructor; set up all of the necessary WordPress hooks.
@@ -111,9 +113,9 @@ class WP_Redirect extends Base { // phpcs:ignore VIPServices.Namespaces.GlobalNa
 	 *
 	 * @param  string $request_path The request path.
 	 *
-	 * @return mixed                The request path.
+	 * @return string               The request path.
 	 */
-	public function collect_legacy_redirector_data( string $request_path ): mixed {
+	public function collect_legacy_redirector_data( string $request_path ): string {
 		if ( $request_path ) {
 			$redirect_uri = WPCOM_Legacy_Redirector::get_redirect_uri( $request_path );
 			if ( $redirect_uri ) {
@@ -133,7 +135,7 @@ class WP_Redirect extends Base { // phpcs:ignore VIPServices.Namespaces.GlobalNa
 	 * @return string      The redirection URL.
 	 */
 	private function legacy_redirector_normalise_url( string $url ): string {
-		$redirector_reflection = new ReflectionClass( 'WPCOM_Legacy_Redirector' );
+		$redirector_reflection = new \ReflectionClass( 'WPCOM_Legacy_Redirector' );
 		$method                = $redirector_reflection->getMethod( 'normalise_url' );
 		$method->setAccessible( true );
 		return $method->invokeArgs( null, array( $url ) );
