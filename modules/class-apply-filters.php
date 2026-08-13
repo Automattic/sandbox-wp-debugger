@@ -94,6 +94,8 @@ class Apply_Filters extends Base {
 				}
 			}
 		}
+
+		return $value;
 	}
 
 	/**

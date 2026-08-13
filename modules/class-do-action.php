@@ -80,6 +80,8 @@ class Do_Action extends Base {
 				}
 			}
 		}
+
+		return $value;
 	}
 
 	/**

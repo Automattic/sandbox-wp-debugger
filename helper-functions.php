@@ -58,11 +58,11 @@ function swpd_log( string $dbg_function = '', string $message = '', array $data 
 /**
  * Custom backtrace generator.
  *
- * @param  boolean $output Whether to return or echo, defaults to output (echo).
+ * @param boolean $should_output Whether to write to the error log, defaults to true.
  *
  * @return array           An array of backtrace data.
  */
-function swpd_debug_backtrace( bool $output = true ): array {
+function swpd_debug_backtrace( bool $should_output = true ): array {
 	$backtrace = debug_backtrace(); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
 	$output    = array();
 
@@ -78,7 +78,7 @@ function swpd_debug_backtrace( bool $output = true ): array {
 		$file = defined( 'ABSPATH' ) ? str_replace( constant( 'ABSPATH' ), '', $call['file'] ) : $call['file'];
 		array_push( $output, $dbg_function . ' ' . $file . ':' . $call['line'] );
 	}
-	if ( false === $output ) {
+	if ( false === $should_output ) {
 		return $output;
 	}
 
@@ -87,6 +87,8 @@ function swpd_debug_backtrace( bool $output = true ): array {
 
 	// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	error_log( implode( ' ', $output ) . ' ' . $http_host . $request_uri );
+
+	return $output;
 }
 
 
