@@ -19,6 +19,19 @@ After checking out this repository, create a `sandbox-wp-debugger.php` file in t
 <?php require_once( __DIR__ . '/sandbox-wp-debugger/sandbox-wp-debugger.php' );
 ```
 
+## Module toggler
+
+Run `node module-toggle.js` for interactive module management. Select `Slow_Queries` and press `S` to cycle through its sort modes.
+
+You can also configure Slow Queries from the command line:
+
+```bash
+node module-toggle.js enable Slow_Queries --sort=time --debug=true --slow-ms=10 --limit=50
+node module-toggle.js configure Slow_Queries --sort=backtrace
+```
+
+Sort modes are `execution` (the default), `time` (slowest first), `query`, `backtrace`, and `connection`.
+
 ## Example output
 
 ### wp-redirect

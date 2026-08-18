@@ -23,6 +23,7 @@
         }
     },
     "scripts": {
+		"test": "php tests/numeric-formatting.php",
         "lint": [
             "@lint:php",
             "@lint:js"

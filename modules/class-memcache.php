@@ -56,7 +56,7 @@ class Memcache extends Base {
 	public function memcache_debug(): void {
 		global $wp_object_cache;
 
-		$total_memcache_time  = 'Total query time: ' . number_format_i18n( sprintf( '%0.1f', $wp_object_cache->time_total * 1000 ), 1 ) . ' ms';
+		$total_memcache_time  = 'Total query time: ' . number_format_i18n( $wp_object_cache->time_total * 1000, 1 ) . ' ms';
 		$total_memcache_size  = 'Total size: ' . size_format( $wp_object_cache->size_total, 2 );
 		$method_detail_output = '';
 		$group_detail_output  = '';
@@ -122,17 +122,14 @@ class Memcache extends Base {
 			);
 
 			$group_time = number_format_i18n(
-				sprintf(
-					'%0.1f',
-					array_sum(
-						array_map(
-							function ( $op ) {
-								return $op[3];
-							},
-							$wp_object_cache->group_ops[ $group ]
-						)
-					) * 1000
-				),
+				array_sum(
+					array_map(
+						function ( $op ) {
+							return $op[3];
+						},
+						$wp_object_cache->group_ops[ $group ]
+					)
+				) * 1000,
 				1
 			);
 
@@ -218,7 +215,7 @@ class Memcache extends Base {
 
 		// time.
 		if ( isset( $arr[3] ) ) {
-			$line .= '(' . number_format_i18n( sprintf( '%0.1f', $arr[3] * 1000 ), 1 ) . ' ms)' . PHP_EOL;
+			$line .= '(' . number_format_i18n( $arr[3] * 1000, 1 ) . ' ms)' . PHP_EOL;
 		}
 
 		// backtrace.

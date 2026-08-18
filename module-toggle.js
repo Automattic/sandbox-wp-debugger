@@ -5,6 +5,16 @@ const path = require('path');
 const readline = require('readline');
 
 const PHP_FILE = path.join(__dirname, 'sandbox-wp-debugger.php');
+const MODULES_START_MARKER = '// Module toggle declarations start.';
+const MODULES_END_MARKER = '// Module toggle declarations end.';
+const MODULE_LINE_REGEX = /^( \* )?(new SWPD\\([a-zA-Z_][a-zA-Z0-9_]*)([^;]*;))$/;
+const SLOW_QUERY_SORT_OPTIONS = ['execution', 'time', 'query', 'backtrace', 'connection'];
+const SLOW_QUERY_DEFAULTS = {
+	debug: false,
+	slowMs: false,
+	limit: -1,
+	sort: 'execution'
+};
 
 // ANSI Color codes
 const colors = {
@@ -20,6 +30,7 @@ const colors = {
 let selectedIndex = 0;
 let moduleStatus = {};
 let MODULES = [];
+let slowQueryOptions = { ...SLOW_QUERY_DEFAULTS };
 
 function readPhpFile () {
 	try {
@@ -54,31 +65,92 @@ function writePhpFile (content) {
 	}
 }
 
-function getAvailableModules () {
-	const content = readPhpFile();
-	const moduleRegex = /^\/?\/?new SWPD\\([a-zA-Z_]+)/gm;
-	const modules = [];
-	let match;
+function getModuleRegion (content) {
+	const startMarkerIndex = content.indexOf(MODULES_START_MARKER);
+	const endMarkerIndex = content.indexOf(MODULES_END_MARKER);
 
-	while ((match = moduleRegex.exec(content)) !== null) {
-		if (!modules.includes(match[1])) {
-			modules.push(match[1]);
-		}
+	if (startMarkerIndex === -1 || endMarkerIndex === -1 || endMarkerIndex <= startMarkerIndex) {
+		throw new Error('Module declaration markers are missing or out of order.');
 	}
 
-	return modules.sort();
+	const regionStart = content.indexOf('\n', startMarkerIndex) + 1;
+	const regionEnd = content.lastIndexOf('\n', endMarkerIndex);
+
+	if (regionStart === 0 || regionEnd < regionStart) {
+		throw new Error('Module declaration region is malformed.');
+	}
+
+	return {
+		start: regionStart,
+		end: regionEnd,
+		content: content.slice(regionStart, regionEnd)
+	};
+}
+
+function parseModules (content) {
+	const region = getModuleRegion(content);
+	const modules = [];
+
+	region.content.split('\n').forEach(line => {
+		const match = line.match(MODULE_LINE_REGEX);
+		if (match) {
+			modules.push({
+				name: match[3],
+				declaration: match[2],
+				enabled: !match[1]
+			});
+		}
+	});
+
+	if (modules.length === 0) {
+		throw new Error('No module declarations were found between the markers.');
+	}
+
+	return { region, modules };
+}
+
+function renderModules (modules) {
+	const chunks = [];
+	let disabledDeclarations = [];
+
+	const flushDisabledDeclarations = () => {
+		if (disabledDeclarations.length === 0) {
+			return;
+		}
+
+		chunks.push([
+			'/*',
+			...disabledDeclarations.map(declaration => ` * ${declaration}`),
+			' */'
+		].join('\n'));
+		disabledDeclarations = [];
+	};
+
+	modules.forEach(module => {
+		if (module.enabled) {
+			flushDisabledDeclarations();
+			chunks.push(module.declaration);
+		} else {
+			disabledDeclarations.push(module.declaration);
+		}
+	});
+
+	flushDisabledDeclarations();
+
+	return `\n${chunks.join('\n\n')}\n`;
+}
+
+function getAvailableModules () {
+	const content = readPhpFile();
+	return parseModules(content).modules.map(module => module.name).sort();
 }
 
 function getModuleStatus () {
 	const content = readPhpFile();
 	const status = {};
 
-	MODULES.forEach(module => {
-		const regex = new RegExp(`^(//)?new SWPD\\\\${module}`, 'm');
-		const match = content.match(regex);
-		if (match) {
-			status[module] = !match[1]; // enabled if no // prefix
-		}
+	parseModules(content).modules.forEach(module => {
+		status[module.name] = module.enabled;
 	});
 
 	return status;
@@ -86,15 +158,104 @@ function getModuleStatus () {
 
 function toggleModule (moduleName, enable) {
 	let content = readPhpFile();
-	const regex = new RegExp(`^(//)?new SWPD\\\\${moduleName}([^;]*;)`, 'm');
+	const parsed = parseModules(content);
+	const module = parsed.modules.find(item => item.name === moduleName);
 
-	if (enable) {
-		content = content.replace(regex, `new SWPD\\${moduleName}$2`);
-	} else {
-		content = content.replace(regex, `//new SWPD\\${moduleName}$2`);
+	if (!module) {
+		throw new Error(`Module declaration not found for '${moduleName}'.`);
 	}
 
+	module.enabled = enable;
+	content = content.slice(0, parsed.region.start) + renderModules(parsed.modules) + content.slice(parsed.region.end);
+
 	writePhpFile(content);
+}
+
+function parseSlowQueryOptions (declaration) {
+	const options = { ...SLOW_QUERY_DEFAULTS };
+	const debugMatch = declaration.match(/'debug'\s*=>\s*(true|false)/);
+	const slowMsMatch = declaration.match(/'slow_ms'\s*=>\s*(false|\d+(?:\.\d+)?)/);
+	const limitMatch = declaration.match(/'limit'\s*=>\s*(-?\d+)/);
+	const sortMatch = declaration.match(/'sort'\s*=>\s*'([^']+)'/);
+
+	if (debugMatch) options.debug = debugMatch[1] === 'true';
+	if (slowMsMatch) options.slowMs = slowMsMatch[1] === 'false' ? false : Number(slowMsMatch[1]);
+	if (limitMatch) options.limit = Number(limitMatch[1]);
+	if (sortMatch && SLOW_QUERY_SORT_OPTIONS.includes(sortMatch[1])) options.sort = sortMatch[1];
+
+	return options;
+}
+
+function formatSlowQueryDeclaration (options) {
+	const slowMs = options.slowMs === false ? 'false' : options.slowMs;
+	return `new SWPD\\Slow_Queries( array( 'debug' => ${options.debug}, 'slow_ms' => ${slowMs}, 'limit' => ${options.limit}, 'sort' => '${options.sort}' ) );`;
+}
+
+function parseSlowQueryCliOptions (args) {
+	const options = {};
+
+	args.forEach(arg => {
+		const match = arg.match(/^--([a-z-]+)=(.+)$/);
+		if (!match) {
+			throw new Error(`Invalid Slow_Queries option '${arg}'. Use --option=value.`);
+		}
+
+		const [, name, value] = match;
+		switch (name) {
+		case 'debug':
+			if (!['true', 'false'].includes(value)) throw new Error('--debug must be true or false.');
+			options.debug = value === 'true';
+			break;
+		case 'slow-ms':
+			if (value === 'false') {
+				options.slowMs = false;
+			} else if (!Number.isNaN(Number(value)) && Number(value) >= 0) {
+				options.slowMs = Number(value);
+			} else {
+				throw new Error('--slow-ms must be false or a non-negative number.');
+			}
+			break;
+		case 'limit':
+			if (!Number.isInteger(Number(value)) || Number(value) < -1) throw new Error('--limit must be -1 or a non-negative integer.');
+			options.limit = Number(value);
+			break;
+		case 'sort':
+			if (!SLOW_QUERY_SORT_OPTIONS.includes(value)) {
+				throw new Error(`--sort must be one of: ${SLOW_QUERY_SORT_OPTIONS.join(', ')}.`);
+			}
+			options.sort = value;
+			break;
+		default:
+			throw new Error(`Unknown Slow_Queries option '--${name}'.`);
+		}
+	});
+
+	return options;
+}
+
+function configureSlowQueries (optionArgs) {
+	let content = readPhpFile();
+	const parsed = parseModules(content);
+	const module = parsed.modules.find(item => item.name === 'Slow_Queries');
+
+	if (!module) {
+		throw new Error('Slow_Queries module declaration was not found.');
+	}
+
+	const options = {
+		...parseSlowQueryOptions(module.declaration),
+		...parseSlowQueryCliOptions(optionArgs)
+	};
+	module.declaration = formatSlowQueryDeclaration(options);
+	content = content.slice(0, parsed.region.start) + renderModules(parsed.modules) + content.slice(parsed.region.end);
+	writePhpFile(content);
+
+	return options;
+}
+
+function getSlowQueryOptions () {
+	const module = parseModules(readPhpFile()).modules.find(item => item.name === 'Slow_Queries');
+	return module ? parseSlowQueryOptions(module.declaration) : { ...SLOW_QUERY_DEFAULTS };
 }
 
 // Utility Functions
@@ -180,10 +341,14 @@ function showUsage () {
 	console.log('  node module-toggle.js enable <module(s)>   - Enable one or more modules');
 	console.log('  node module-toggle.js disable <module(s)>  - Disable one or more modules');
 	console.log('  node module-toggle.js toggle <module>      - Toggle a module on/off');
+	console.log('  node module-toggle.js configure Slow_Queries [options]');
 	console.log('  node module-toggle.js enable-all           - Enable all modules');
 	console.log('  node module-toggle.js disable-all          - Disable all modules (with confirmation)');
 	console.log('');
 	console.log('For multiple modules, separate with commas: enable Mod1,Mod2,Mod3');
+	console.log('Slow_Queries options: --debug=true|false --slow-ms=false|N --limit=-1|N');
+	console.log(`                      --sort=${SLOW_QUERY_SORT_OPTIONS.join('|')}`);
+	console.log('Options can also follow: enable Slow_Queries');
 	console.log('');
 	console.log('Available modules:');
 	getAvailableModules().forEach(module => console.log(`  ${module}`));
@@ -194,6 +359,7 @@ function showStatus () {
 	const status = getModuleStatus();
 	const enabledCount = Object.values(status).filter(Boolean).length;
 	const totalCount = modules.length;
+	const currentSlowQueryOptions = getSlowQueryOptions();
 
 	console.log('Module Status:');
 	console.log('==============');
@@ -207,7 +373,7 @@ function showStatus () {
 
 		// Add usage hints for common modules
 		let hint = '';
-		if (module === 'Slow_Queries') hint = ' (monitors database performance)';
+		if (module === 'Slow_Queries') hint = ` (sort=${currentSlowQueryOptions.sort}, debug=${currentSlowQueryOptions.debug})`;
 		else if (module === 'WP_Redirect') hint = ' (debugs wp_redirect issues)';
 		else if (module === 'Apply_Filters') hint = ' (tracks filter modifications)';
 		else if (module === 'Remote_Requests') hint = ' (logs HTTP requests)';
@@ -253,7 +419,7 @@ function drawInterface () {
 	console.log(`${colors.cyan}┌───────────────────────────────────────────────────────┐${colors.reset}`);
 	console.log(`${colors.cyan}│${colors.bright}               Sandbox WP Debugger Toggle              ${colors.reset}${colors.cyan}│${colors.reset}`);
 	console.log(`${colors.cyan}├───────────────────────────────────────────────────────┤${colors.reset}`);
-	console.log(`${colors.cyan}│ Use ↑↓ arrows to navigate, ENTER to toggle, Q to quit │${colors.reset}`);
+	console.log(`${colors.cyan}│ Use ↑↓, ENTER to toggle, S to change query sort, Q quit│${colors.reset}`);
 	console.log(`${colors.cyan}└───────────────────────────────────────────────────────┘${colors.reset}`);
 	console.log('');
 
@@ -268,11 +434,12 @@ function drawInterface () {
 		const highlight = isSelected ? '\x1b[7m' : '';
 		const reset = isSelected ? '\x1b[0m' : '';
 
-		console.log(`${highlight}${arrow}${statusColor}${statusChar}${colors.reset} ${module.padEnd(20)} ${statusText}${reset}`);
+		const optionText = module === 'Slow_Queries' ? ` sort=${slowQueryOptions.sort}` : '';
+		console.log(`${highlight}${arrow}${statusColor}${statusChar}${colors.reset} ${module.padEnd(20)} ${statusText}${optionText}${reset}`);
 	});
 
 	console.log('');
-	console.log(`${colors.cyan}Press Q to quit${colors.reset}`);
+	console.log(`${colors.cyan}Press S on Slow_Queries to cycle its sort mode${colors.reset}`);
 }
 
 function setupInput () {
@@ -307,6 +474,18 @@ function setupInput () {
 			drawInterface();
 			break;
 		}
+
+		case 's':
+		case 'S': {
+			const selectedModule = MODULES[selectedIndex];
+			if (selectedModule === 'Slow_Queries') {
+				const currentIndex = SLOW_QUERY_SORT_OPTIONS.indexOf(slowQueryOptions.sort);
+				const nextSort = SLOW_QUERY_SORT_OPTIONS[(currentIndex + 1) % SLOW_QUERY_SORT_OPTIONS.length];
+				slowQueryOptions = configureSlowQueries([`--sort=${nextSort}`]);
+				drawInterface();
+			}
+			break;
+		}
 		}
 	});
 }
@@ -326,6 +505,7 @@ function startTUI () {
 
 	MODULES = getAvailableModules();
 	moduleStatus = getModuleStatus();
+	slowQueryOptions = getSlowQueryOptions();
 
 	enterAltBuffer();
 	hideCursor();
@@ -360,6 +540,14 @@ async function main () {
 			const availableModules = getAvailableModules();
 			const moduleNames = parseModuleList(moduleName);
 			const results = [];
+			const optionArgs = args.slice(2);
+
+			if (optionArgs.length > 0) {
+				if (moduleNames.length !== 1 || moduleNames[0] !== 'Slow_Queries') {
+					throw new Error('Configuration options can only be used when enabling Slow_Queries by itself.');
+				}
+				configureSlowQueries(optionArgs);
+			}
 
 			for (const module of moduleNames) {
 				const validation = validateModuleName(module, availableModules);
@@ -376,6 +564,16 @@ async function main () {
 			} else {
 				console.log(`${colors.green}✓${colors.reset} Enabled ${results.length} modules: ${results.join(', ')}`);
 			}
+			break;
+		}
+
+		case 'configure': {
+			if (moduleName !== 'Slow_Queries') {
+				throw new Error('Only Slow_Queries currently has configurable options.');
+			}
+
+			const options = configureSlowQueries(args.slice(2));
+			console.log(`${colors.green}✓${colors.reset} Configured Slow_Queries: debug=${options.debug}, slow-ms=${options.slowMs}, limit=${options.limit}, sort=${options.sort}`);
 			break;
 		}
 
@@ -464,4 +662,7 @@ async function main () {
 	}
 }
 
-main().catch(console.error);
+main().catch(error => {
+	console.error(`Error: ${error.message}`);
+	process.exitCode = 1;
+});

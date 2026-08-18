@@ -12,6 +12,13 @@ namespace SWPD;
  */
 class Slow_Queries extends Base {
 	/**
+	 * Supported query sort modes.
+	 *
+	 * @var string[]
+	 */
+	public const SORT_OPTIONS = array( 'execution', 'time', 'query', 'backtrace', 'connection' );
+
+	/**
 	 * Name of the SWPD Debugger running.
 	 *
 	 * @var string
@@ -35,9 +42,14 @@ class Slow_Queries extends Base {
 			'debug'   => false,
 			'slow_ms' => false,
 			'limit'   => -1,
+			'sort'    => 'execution',
 		);
 
-		$this->args = wp_parse_args( $args, $defaults );
+		$this->args         = wp_parse_args( $args, $defaults );
+		$this->args['sort'] = strtolower( (string) $this->args['sort'] );
+		if ( ! in_array( $this->args['sort'], self::SORT_OPTIONS, true ) ) {
+			$this->args['sort'] = 'execution';
+		}
 
 		add_action( 'shutdown', array( $this, 'shutdown' ), PHP_INT_MAX );
 	}
@@ -133,9 +145,11 @@ class Slow_Queries extends Base {
 
 		if ( ! empty( $wpdb->queries ) ) {
 
-			$counter = 0;
+			$displayed_count = 0;
 
-			foreach ( $wpdb->queries as $q ) {
+			foreach ( $this->sort_queries( $wpdb->queries ) as $query_entry ) {
+				$q                = $query_entry['query'];
+				$execution_number = $query_entry['execution'] + 1;
 				// phpcs:ignore WordPressVIPMinimum.Variables.VariableAnalysis.UndefinedUnsetVariable,VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedUnsetVariable
 				unset( $query, $elapsed, $affected_rows, $host, $microtime, $debug, $dbhname, $dataset, $callback_result, $connection );
 				extract( $q );
@@ -151,10 +165,6 @@ class Slow_Queries extends Base {
 				}
 
 				$total_time += $elapsed;
-
-				if ( $this->args['limit'] > 0 && ++$counter > $this->args['limit'] ) {
-					continue;
-				}
 
 				// ts is the absolute time at which each query was executed.
 				if ( true === isset( $microtime ) ) {
@@ -182,7 +192,7 @@ class Slow_Queries extends Base {
 				}
 
 				if ( $this->args['debug'] ) {
-					$debug = PHP_EOL . wp_strip_all_tags( "$connected $debug #{$counter} (" . number_format( sprintf( '%0.1f', $elapsed * 1000 ), 1, '.', ',' ) . 'ms @ ' . sprintf( '%0.2f', 1000 * ( $ts - $timestart ) ) . 'ms)' );
+					$debug = PHP_EOL . wp_strip_all_tags( "$connected $debug #{$execution_number} (" . number_format( $elapsed * 1000, 1, '.', ',' ) . 'ms @ ' . sprintf( '%0.2f', 1000 * ( $ts - $timestart ) ) . 'ms)' );
 				} else {
 					$debug = '';
 				}
@@ -195,6 +205,11 @@ class Slow_Queries extends Base {
 					}
 				}
 
+				++$displayed_count;
+				if ( $this->args['limit'] > 0 && $displayed_count > $this->args['limit'] ) {
+					continue;
+				}
+
 				$out .= $this->highlight_sql( $query ) . $debug . PHP_EOL . PHP_EOL;
 			}
 		}
@@ -203,10 +218,10 @@ class Slow_Queries extends Base {
 		if ( $wpdb->num_queries ) {
 			$num_queries = 'Total Queries:' . number_format( $wpdb->num_queries ) . ' | ';
 		}
-		$query_time   = 'Total query time:' . number_format( sprintf( '%0.1f', $total_time * 1000 ), 1 ) . 'ms | ';
+		$query_time   = 'Total query time:' . number_format( $total_time * 1000, 1 ) . 'ms | ';
 		$memory_usage = 'Peak Memory Used:' . number_format( memory_get_peak_usage() ) . ' bytes | ';
 		if ( true === property_exists( $wp_object_cache, 'time_total' ) ) {
-			$memcache_time = 'Total memcache query time:' . number_format( sprintf( '%0.1f', $wp_object_cache->time_total * 1000 ), 1, '.', ',' ) . 'ms' . PHP_EOL . PHP_EOL;
+			$memcache_time = 'Total memcache query time:' . number_format( $wp_object_cache->time_total * 1000, 1, '.', ',' ) . 'ms' . PHP_EOL . PHP_EOL;
 		} else {
 			$memcache_time = '';
 		}
@@ -216,6 +231,108 @@ class Slow_Queries extends Base {
 		$out = apply_filters( 'swpdb_render_sql_queries_output', $out );
 
 		return $out;
+	}
+
+	/**
+	 * Sorts query records while retaining their original execution positions.
+	 *
+	 * Time sorting is descending; text-based modes are ascending. Equal values
+	 * retain execution order.
+	 *
+	 * @param array $queries Raw query records from wpdb.
+	 *
+	 * @return array<int, array{execution: int, query: array}> Sorted query records.
+	 */
+	private function sort_queries( array $queries ): array {
+		$indexed_queries = array();
+		foreach ( array_values( $queries ) as $execution => $query ) {
+			$indexed_queries[] = array(
+				'execution' => $execution,
+				'query'     => $query,
+			);
+		}
+
+		if ( 'execution' === $this->args['sort'] ) {
+			return $indexed_queries;
+		}
+
+		usort(
+			$indexed_queries,
+			function ( array $left, array $right ): int {
+				$comparison = match ( $this->args['sort'] ) {
+					'time'       => $this->query_time( $right['query'] ) <=> $this->query_time( $left['query'] ),
+					'query'      => strnatcasecmp( $this->query_text( $left['query'] ), $this->query_text( $right['query'] ) ),
+					'backtrace'  => strnatcasecmp( $this->query_backtrace( $left['query'] ), $this->query_backtrace( $right['query'] ) ),
+					'connection' => strnatcasecmp( $this->query_connection( $left['query'] ), $this->query_connection( $right['query'] ) ),
+					default      => 0,
+				};
+
+				return 0 !== $comparison ? $comparison : $left['execution'] <=> $right['execution'];
+			}
+		);
+
+		return $indexed_queries;
+	}
+
+	/**
+	 * Gets a query's elapsed time.
+	 *
+	 * @param array $query Query record.
+	 *
+	 * @return float Elapsed seconds.
+	 */
+	private function query_time( array $query ): float {
+		return (float) ( $query['elapsed'] ?? $query[1] ?? 0 );
+	}
+
+	/**
+	 * Gets a query's SQL text.
+	 *
+	 * @param array $query Query record.
+	 *
+	 * @return string SQL text.
+	 */
+	private function query_text( array $query ): string {
+		return (string) ( $query['query'] ?? $query[0] ?? '' );
+	}
+
+	/**
+	 * Gets a query's backtrace.
+	 *
+	 * @param array $query Query record.
+	 *
+	 * @return string Backtrace text.
+	 */
+	private function query_backtrace( array $query ): string {
+		return (string) ( $query['debug'] ?? $query[2] ?? '' );
+	}
+
+	/**
+	 * Gets a stable connection label for a query.
+	 *
+	 * @param array $query Query record.
+	 *
+	 * @return string Connection label.
+	 */
+	private function query_connection( array $query ): string {
+		$connection = $query['connection'] ?? array();
+		if ( ! is_array( $connection ) ) {
+			return (string) $connection;
+		}
+
+		return implode(
+			' ',
+			array_filter(
+				array_map(
+					'strval',
+					array(
+						$connection['dbhname'] ?? '',
+						$connection['host'] ?? '',
+						$connection['name'] ?? '',
+					)
+				)
+			)
+		);
 	}
 
 	/**

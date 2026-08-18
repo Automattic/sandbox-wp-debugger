@@ -38,8 +38,10 @@ unset( $swpd_module ); // No longer needed.
  *
  * Alternatively, use these new classes anywhere else to load them up.
  *
- * phpcs:disable Squiz.Commenting.InlineComment.NoSpaceBefore,Squiz.PHP.CommentedOutCode.Found,Squiz.Commenting.InlineComment.InvalidEndChar
+ * phpcs:disable Squiz.Commenting.InlineComment.NoSpaceBefore,Squiz.PHP.CommentedOutCode.Found,Squiz.Commenting.InlineComment.InvalidEndChar,WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
  */
+
+// Module toggle declarations start.
 
 /*
  * new SWPD\Batcache_Debug();
@@ -50,7 +52,7 @@ unset( $swpd_module ); // No longer needed.
  * new SWPD\Slow_Bulk_Update();
  * new SWPD\Slow_Hooks();
  * new SWPD\Slow_Post_Save();
- * new SWPD\Slow_Queries( array( 'debug' => true ) );
+ * new SWPD\Slow_Queries( array( 'debug' => true, 'slow_ms' => false, 'limit' => -1, 'sort' => 'execution' ) );
  * new SWPD\ES_Queries();
  * new SWPD\WP_Redirect();
  * new SWPD\Slow_Templates();
@@ -58,4 +60,6 @@ unset( $swpd_module ); // No longer needed.
  * new SWPD\Timers();
  */
 
-// phpcs:enable Squiz.Commenting.InlineComment.NoSpaceBefore,Squiz.PHP.CommentedOutCode.Found,Squiz.Commenting.InlineComment.InvalidEndChar
+// Module toggle declarations end.
+
+// phpcs:enable Squiz.Commenting.InlineComment.NoSpaceBefore,Squiz.PHP.CommentedOutCode.Found,Squiz.Commenting.InlineComment.InvalidEndChar,WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
